@@ -6,6 +6,19 @@ set "racine=%~1"
 set "projet=%~2"
 
 
+if exist "%racine%\out" (
+    rmdir /s /q "%racine%\out"
+    echo "Le dossier out dans le dossier temp du  deploiement a deja existe et vient d'etre supprimee"
+)
+
+if exist "%racine%\classes" (
+    rmdir /s /q "%racine%\classes"
+    echo "Le dossier classes dans le dossier temp du  deploiement a deja existe et vient d'etre supprimee"
+)
+
+
+
+
 :: POUR STOCKER TEMPORAIREMENT LA GLOBALITE DE TOUS LES .java DANS LE DOSSIER ET SOUS-DOSSIERS DU src
 mkdir "%racine%\out"
 :: POUR CONTENIR LES RESULTATS ISSU DE LA COMPILATION DE TOUS LES FICHIERS DANS LE out

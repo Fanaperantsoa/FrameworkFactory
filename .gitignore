@@ -1,0 +1,5 @@
+# Ignorer le fichier .bat
+script_creation_jar.bat
+
+# Ignorer le dossier src
+src/
