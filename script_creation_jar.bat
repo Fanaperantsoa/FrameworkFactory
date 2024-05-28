@@ -6,6 +6,7 @@ set "racine=%~1"
 set "projet=%~2"
 
 
+
 if exist "%racine%\out" (
     rmdir /s /q "%racine%\out"
     echo "Le dossier out dans le dossier temp du  deploiement a deja existe et vient d'etre supprimee"

@@ -1,5 +1,8 @@
 # Ignorer le fichier .bat
-script_creation_jar.bat
+# script_creation_jar.bat
 
 # Ignorer le dossier src
-src/
+# src/
+
+# Ignorer le dossier classes
+classes/
