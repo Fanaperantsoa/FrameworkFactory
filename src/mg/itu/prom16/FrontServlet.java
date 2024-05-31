@@ -1,5 +1,6 @@
 package mg.itu.prom16;
 
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.String;
 
@@ -46,15 +47,47 @@ public class FrontServlet extends HttpServlet{
 
     @Override
     public void doGet(HttpServletRequest request,HttpServletResponse response) throws ServletException, IOException{
-        processRequest(request, response);
+        try {
+            processRequest(request, response);
+        } catch (ClassNotFoundException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        } catch (InvocationTargetException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        } catch (InstantiationException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        } catch (IllegalAccessException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        } catch (SecurityException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        } catch (ServletException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        } catch (IOException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        } catch (NoSuchMethodException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
     }
 
     @Override
     public void doPost(HttpServletRequest request,HttpServletResponse response) throws ServletException, IOException{
-        processRequest(request, response);
+        try {
+            processRequest(request, response);
+        } catch (ClassNotFoundException | InvocationTargetException | InstantiationException | IllegalAccessException
+                | SecurityException | ServletException | IOException | NoSuchMethodException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
     }
 
-    public void processRequest(HttpServletRequest request,HttpServletResponse response) throws ServletException, IOException{
+    public void processRequest(HttpServletRequest request,HttpServletResponse response) throws ServletException, IOException, ClassNotFoundException, InvocationTargetException, InstantiationException, IllegalAccessException, SecurityException, NoSuchMethodException{
         PrintWriter out = response.getWriter();
 
         out.println(request.getRequestURL());
@@ -71,7 +104,26 @@ public class FrontServlet extends HttpServlet{
                 Mapping result = entree.getValue();
                 out.println(" - La classe est : " + result.getClasse());
                 out.println(" - La methode est : " + result.getMethode());
+                
+
+                Class<?> classe = Class.forName(result.getClasse());
+                // out.println("1 - " + classe.toString());
+                Object instanceClass = classe.getDeclaredConstructor().newInstance();
+                // out.println("2 - " + instanceClass.toString());
+                // Object retour = execMethod(instanceClass, result.getMethode(), null);
+                Method methode = classe.getDeclaredMethod(result.getMethode());
+                // out.println("3 - " + methode.toString());
+                Object retour = methode.invoke(instanceClass);
+                // out.println("4 - " + retour.toString());
+
+                
+
+                String retourFonction = (String)retour;
+                               
+                out.println("<p> La fonction " + result.getMethode() + " retourne : " + retourFonction);
+
                 checker = true;
+
                 break;
             }
         }
@@ -116,31 +168,6 @@ public class FrontServlet extends HttpServlet{
         // return text;
     }
 
-    
-    // private void scanDirectory(File directory, String packageName) {
-    //     System.out.println("Scanning directory: " + directory.getAbsolutePath());
-
-    //     for (File file : directory.listFiles()) {
-    //         System.out.println("Processing file: " + file.getName());
-
-    //         if (file.isDirectory()) {
-    //             scanDirectory(file, packageName + "." + file.getName());
-    //         } else if (file.getName().endsWith(".class")) {
-    //             String className = packageName + '.' + file.getName().substring(0, file.getName().length() - 6);
-    //             try {
-    //                 Class<?> clazz = Class.forName(className);
-    //                 if (clazz.isAnnotationPresent(AnnotationController.class) && !verifiedClasses.contains(clazz.getName())) {
-    //                     AnnotationController annotation = clazz.getAnnotation(AnnotationController.class);
-    //                     listeControllers.add(clazz.getName() + " (" + annotation.value() + ")");
-    //                     verifiedClasses.add(clazz.getName());
-    //                     System.out.println("Added controller: " + clazz.getName());
-    //                 }
-    //             } catch (ClassNotFoundException e) {
-    //                 e.printStackTrace();
-    //             }
-    //         }
-        // }
-    // }
 
     // SCANNE LE REPERTOIRE DONNE ET INSERE DANS LA LISTE DES CONTROLEURS TOUTES LES CLASSES ANNOTEES AVEC @ControllerAnous
     private void scanDirectory(File directory, String packageName) {
@@ -171,7 +198,46 @@ public class FrontServlet extends HttpServlet{
                 }
             }
         }
-        //return nom_fichier;
     }
+
+    // public static Object execMethod(Object o, String methodName, Object[] params){
+    //     Object retour;
+
+    //     if(params != null && params.length > 0){
+    //         Class<?>[] parameterTypes = new Class<?>[params.length];
+    //         for (int i = 0; i < params.length; i++){
+    //             parameterTypes[i] = params[i].getClass();
+    //         }
+    //         try {
+    //             Method methode = o.getClass().getDeclaredMethod(methodName, parameterTypes);
+    //             System.out.println("3 - " + methode.toString());
+    //             retour = methode.invoke(o, params);
+    //         } catch (NoSuchMethodException e) {
+    //             throw new RuntimeException(e);
+    //         } catch (InvocationTargetException e) {
+    //             throw new RuntimeException(e);
+    //         } catch (IllegalAccessException e) {
+    //             throw new RuntimeException(e);
+    //         }
+    //     }
+    //     else{
+    //         try {
+    //             Method methode = o.getClass().getDeclaredMethod(methodName);
+    //             System.out.println("4 - " + methode.toString());
+    //             retour = methode.invoke(o);
+    //         } catch (NoSuchMethodException e) {
+    //             throw new RuntimeException(e);
+    //         } catch (InvocationTargetException e) {
+    //             throw new RuntimeException(e);
+    //         } catch (IllegalAccessException e) {
+    //             throw new RuntimeException(e);
+    //         }
+    //     }
+
+    //     System.out.println("5 - " + retour.toString());
+    //     return retour;
+    // }
+
+
 
 }
