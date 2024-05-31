@@ -1,12 +1,16 @@
 package mg.itu.prom16;
+
+import java.lang.reflect.Method;
+import java.lang.String;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.List;
-import java.util.Set;
+import java.util.Map.Entry;
+import java.util.HashMap;
 import java.util.ArrayList;
-import java.util.HashSet;
-import java.net.URL;
+
 
 import jakarta.servlet.annotation.WebServlet;
 
@@ -16,20 +20,28 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.ServletException;
 
-import annotations.ControllerAnous;
 
+
+import annotations.ControllerAnous;
+import annotations.Get;
+
+import mg.itu.prom16.Mapping;
 
 
 public class FrontServlet extends HttpServlet{
-    private boolean checked = false;
-    private final List<String> listeControllers = new ArrayList<>();
 
-    public boolean getChecked(){
-        return this.checked;
-    }
+    //HashMap pour stocker tous les methodes et leur classe
+    private final HashMap<String, Mapping> methodeEtController = new HashMap<>();
 
-    public void setChecked(boolean activer){
-        this.checked = activer;
+
+
+    @Override
+    public void init() throws ServletException{
+        //super.init();
+        ServletConfig config = getServletConfig();
+        
+        // Cette 
+        scanner(config);
     }
 
     @Override
@@ -46,25 +58,37 @@ public class FrontServlet extends HttpServlet{
         PrintWriter out = response.getWriter();
 
         out.println(request.getRequestURL());
+        String uri = request.getRequestURI();
+        // out.println(request.getRequestURI());
+        // out.println(uri);
+
+        boolean checker = false;
+
+        for(Entry<String, Mapping> entree: methodeEtController.entrySet() ){
+            // out.println("/TestSprint/" + entree.getKey());
+            if(uri.equals("/TestSprint/" + entree.getKey())){
+                out.println("------------ LISTING DES CONTROLEURS ------------");
+                Mapping result = entree.getValue();
+                out.println(" - La classe est : " + result.getClasse());
+                out.println(" - La methode est : " + result.getMethode());
+                checker = true;
+                break;
+            }
+        }
+        if (checker == false){
+            out.println("Erreur!! La methode et la classe est introuvable !");
+        }
+    
+
+
         
-        // SI LE PACKAGE N'A PAS ENCORE ETE SCANNEE, ON EFFECTUE LE SCAN
-        if(!checked){
-            ServletConfig config = getServletConfig();
-            scanner(config);
-            setChecked(true);
 
-        }
-
-        out.println("\n Voici la liste de tous nos controleurs : \n");
-        // ON LISTE TOUTES LES CLASSES ANNOTES CONTROLEURS
-        for (String controleur : listeControllers){
-            out.println(" - " + controleur);
-        }
+       
 
 
 
 
-
+        // --------------- SPRINT 1 ------------------
         // ServletConfig config = getServletConfig();
         // String info_servlet = scanner(config);
         // out.println(info_servlet);
@@ -130,7 +154,17 @@ public class FrontServlet extends HttpServlet{
                 try {
                     Class<?> clazz = Class.forName(className);
                     if (clazz.isAnnotationPresent(annotations.ControllerAnous.class)) {
-                        listeControllers.add(clazz.getName());
+                        // A CE STADE ON SAIT QUE LA CLASSE SELECTIONNEE EST UN CONTROLEUR
+                        // listeControllers.add(clazz.getName());
+                        Method[] methodes = clazz.getMethods();
+                        for (Method m : methodes){
+                            if (m.isAnnotationPresent(annotations.Get.class)){
+                                Get methodAnnotation = m.getAnnotation(annotations.Get.class);
+                                String attribut = methodAnnotation.url();
+                                Mapping entry = new Mapping(clazz.getName(), m.getName());
+                                methodeEtController.put(attribut, entry);
+                            }
+                        }
                     }
                 } catch (ClassNotFoundException e) {
                     e.printStackTrace();
