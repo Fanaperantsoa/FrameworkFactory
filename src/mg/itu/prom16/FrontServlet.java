@@ -119,7 +119,6 @@ public class FrontServlet extends HttpServlet{
                 
 
                 String retourFonction = (String)retour;
-                               
                 out.println("<p> La fonction " + result.getMethode() + " retourne : " + retourFonction);
 
                 checker = true;
