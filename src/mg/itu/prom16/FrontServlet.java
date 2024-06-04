@@ -110,16 +110,19 @@ public class FrontServlet extends HttpServlet{
                 // out.println("1 - " + classe.toString());
                 Object instanceClass = classe.getDeclaredConstructor().newInstance();
                 // out.println("2 - " + instanceClass.toString());
-                // Object retour = execMethod(instanceClass, result.getMethode(), null);
-                Method methode = classe.getDeclaredMethod(result.getMethode());
+                Object retour = execMethod(instanceClass, result.getMethode(), null);
+                // String retour = execMethod(instanceClass, result.getMethode(), null);
+                // Method methode = classe.getDeclaredMethod(result.getMethode());
                 // out.println("3 - " + methode.toString());
-                Object retour = methode.invoke(instanceClass);
+                // Object retour = methode.invoke(instanceClass);
                 // out.println("4 - " + retour.toString());
 
                 
 
                 String retourFonction = (String)retour;
-                out.println("<p> La fonction " + result.getMethode() + " retourne : " + retourFonction);
+                               
+                out.println("<p> La fonction " + result.getMethode() + " retourne --> \"" + retourFonction + "\"");
+                // out.println("<p> La fonction " + result.getMethode() + " retourne : " + retour);
 
                 checker = true;
 
@@ -199,43 +202,52 @@ public class FrontServlet extends HttpServlet{
         }
     }
 
-    // public static Object execMethod(Object o, String methodName, Object[] params){
-    //     Object retour;
+    public static Object/* String */ execMethod(Object o, String methodName, Object[] params){
+        // Object retour = new Object();
+        String retour;
+        retour = "Tafiditra ato anaty execMethod";
+        if(params != null && params.length > 0){
+            retour = retour + "\n --> dia eto isika tafiditra ato anaty if";
+        //     Class<?>[] parameterTypes = new Class<?>[params.length];
+        //     for (int i = 0; i < params.length; i++){
+        //         parameterTypes[i] = params[i].getClass();
+        //     }
+        //     try {
+        //         Method methode = o.getClass().getDeclaredMethod(methodName, parameterTypes);
+        //         System.out.println("3 - " + methode.toString());
+        //         retour = methode.invoke(o, params);
+        //     } catch (NoSuchMethodException e) {
+        //         throw new RuntimeException(e);
+        //     } catch (InvocationTargetException e) {
+        //         throw new RuntimeException(e);
+        //     } catch (IllegalAccessException e) {
+        //         throw new RuntimeException(e);
+        //     }
+        }
+        else{
+            retour = retour + "\n --> dia eto isika tafiditra ato anaty else";
+            try {
+                Method methode = o.getClass().getDeclaredMethod(methodName);
+                retour = retour + "\n \t --> dia eto indray isika mahazo ny methode : " + methodName;
+                retour = retour + "\n \t --> izay ho antsoin'ny objet : " + o.toString();
+                retour = retour + "\n \t --> ahazoantsika objet Methode vaovao : " + methode.toString();
+        //         System.out.println("4 - " + methode.toString());
+                Object a_retourner = methode.invoke(o);
+                retour = retour + "\n \t --> dia andramantsika invoker-na ilay fonction : " + a_retourner.toString();
 
-    //     if(params != null && params.length > 0){
-    //         Class<?>[] parameterTypes = new Class<?>[params.length];
-    //         for (int i = 0; i < params.length; i++){
-    //             parameterTypes[i] = params[i].getClass();
-    //         }
-    //         try {
-    //             Method methode = o.getClass().getDeclaredMethod(methodName, parameterTypes);
-    //             System.out.println("3 - " + methode.toString());
-    //             retour = methode.invoke(o, params);
-    //         } catch (NoSuchMethodException e) {
-    //             throw new RuntimeException(e);
-    //         } catch (InvocationTargetException e) {
-    //             throw new RuntimeException(e);
-    //         } catch (IllegalAccessException e) {
-    //             throw new RuntimeException(e);
-    //         }
-    //     }
-    //     else{
-    //         try {
-    //             Method methode = o.getClass().getDeclaredMethod(methodName);
-    //             System.out.println("4 - " + methode.toString());
-    //             retour = methode.invoke(o);
-    //         } catch (NoSuchMethodException e) {
-    //             throw new RuntimeException(e);
-    //         } catch (InvocationTargetException e) {
-    //             throw new RuntimeException(e);
-    //         } catch (IllegalAccessException e) {
-    //             throw new RuntimeException(e);
-    //         }
-    //     }
+                return a_retourner;
+            } catch (NoSuchMethodException e) {
+                throw new RuntimeException(e);
+            } catch (InvocationTargetException e) {
+                throw new RuntimeException(e);
+            } catch (IllegalAccessException e) {
+                throw new RuntimeException(e);
+            }
+        }
 
-    //     System.out.println("5 - " + retour.toString());
-    //     return retour;
-    // }
+        // System.out.println("5 - " + retour.toString());
+        return null;
+    }
 
 
 
