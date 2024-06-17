@@ -128,17 +128,14 @@ public class FrontServlet extends HttpServlet{
                     String url = mv.getUrl();
                     HashMap<String, Object> data = mv.getData();
 
-                    if(data.isEmpty()){
-                        RequestDispatcher dispatcher = request.getRequestDispatcher(url);
-                        dispatcher.forward(request, response);
-                    } else {
+                    if(!data.isEmpty()){
                         Set<Entry<String, Object>> entrees = data.entrySet();
                         for (Entry<String, Object> entrie : entrees) {
                             request.setAttribute(entrie.getKey(), entrie.getValue());
                         }
-                        RequestDispatcher dispatcher = request.getRequestDispatcher(url);
-                        dispatcher.forward(request, response);
                     }
+                    RequestDispatcher dispatcher = request.getRequestDispatcher(url);
+                    dispatcher.forward(request, response);
                 }
                                
                 
