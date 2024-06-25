@@ -1,7 +1,9 @@
 package mg.itu.prom16;
 
 import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.MalformedParametersException;
 import java.lang.reflect.Method;
+import java.lang.reflect.Parameter;
 import java.lang.String;
 
 import java.io.File;
@@ -10,6 +12,7 @@ import java.io.FileNotFoundException;
 import java.io.PrintWriter;
 import java.util.List;
 import java.util.ArrayList;
+import java.util.Enumeration;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.HashMap;
@@ -26,9 +29,7 @@ import jakarta.servlet.ServletException;
 
 import Exceptions.*;
 
-import annotations.ControllerAnous;
-import annotations.Get;
-
+import annotations.*;
 import mg.itu.prom16.Mapping;
 import mg.itu.prom16.ModelView;
 
@@ -177,94 +178,110 @@ public class FrontServlet extends HttpServlet{
             // out.println(request.getRequestURI());
             // out.println(uri);
 
+            try {
+                for(Entry<String, Mapping> entree: methodeEtController.entrySet() ){
+                    if (uri.equals("/TestSprint/NameFormSansAnnotation")) {
+                        RequestDispatcher dispatcher = request.getRequestDispatcher("/WEB-INF/formSansAnnotation.jsp");
+                        dispatcher.forward(request, response);
+                    } else if (uri.equals("/TestSprint/NameFormAnnotateeParam")) {
+                        RequestDispatcher dispatcher = request.getRequestDispatcher("/WEB-INF/formAvecAnnotation.jsp");
+                        dispatcher.forward(request, response);
+                    } else if(uri.equals("/TestSprint/" + entree.getKey())){
+                        // out.println("------------ LISTING DES CONTROLEURS ------------");
+                        Mapping result = entree.getValue();
+                        // out.println(" - La classe est : " + result.getClasse());
+                        // out.println(" - La methode est : " + result.getMethode());
+                        
+                        
+            
+                        Class<?> classe = Class.forName(result.getClasse());
+                        log ("1 - La classe est : " + classe.toString());
+                        
+                        Object retour = execMethod(classe, result.getMethode(), request);
+                        // Object retour = execMethod(instanceClass, method);
+                        // out.println("8 - " + retour.toString());
 
-            for(Entry<String, Mapping> entree: methodeEtController.entrySet() ){
-                // out.println("/TestSprint/" + entree.getKey());
-                if(uri.equals("/TestSprint/" + entree.getKey())){
-                    // out.println("------------ LISTING DES CONTROLEURS ------------");
-                    Mapping result = entree.getValue();
-                    // out.println(" - La classe est : " + result.getClasse());
-                    // out.println(" - La methode est : " + result.getMethode());
-                    
-        
-                    Class<?> classe = Class.forName(result.getClasse());
-                    // out.println("1 - " + classe.toString());
-                    Object instanceClass = classe.getDeclaredConstructor().newInstance();
-                    // out.println("2 - " + instanceClass.toString());
-                    
-                    Method method = classe.getMethod(result.getMethode());
-                    Class<?> type_de_retour = method.getReturnType();
-                    
-                    Object retour = execMethod(instanceClass, result.getMethode(), null);
-                    
-                    if(type_de_retour.equals(String.class)/*  && method.getParameters() == null */){
-                        String retourFonction = (String)retour;
-                        out.println("La fonction " + result.getMethode() + " retourne --> \"" + retourFonction + "\"");
-                    } else if (type_de_retour.equals(ModelView.class)){
-                        ModelView mv = (ModelView) retour;
-                        String url = mv.getUrl();
-                        try {
-                            thisExist(url);
-                            HashMap<String, Object> data = mv.getData();
+                        Class<?> kilasy = retour.getClass();
 
-                            // ON AJOUTE LES PARAMETRES POUR L'ENVOI
-                            if(!data.isEmpty()){
-                                Set<Entry<String, Object>> entrees = data.entrySet();
-                                for (Entry<String, Object> entrie : entrees) {
-                                    request.setAttribute(entrie.getKey(), entrie.getValue());
+                        if(kilasy.equals(String.class)/*  && method.getParameters() == null */){
+                            String retourFonction = (String)retour;
+                            out.println("La fonction " + result.getMethode() + " retourne --> \"" + retourFonction + "\"");
+                        } else if (kilasy.equals(ModelView.class)){
+                            ModelView mv = (ModelView) retour;
+                            String url = mv.getUrl();
+                            try {
+                                thisExist(url);
+                                HashMap<String, Object> data = mv.getData();
+
+                                // ON AJOUTE LES PARAMETRES POUR L'ENVOI
+                                if(!data.isEmpty()){
+                                    Set<Entry<String, Object>> entrees = data.entrySet();
+                                    for (Entry<String, Object> entrie : entrees) {
+                                        request.setAttribute(entrie.getKey(), entrie.getValue());
+                                    }
                                 }
+                                // REDIRIGER L'UTILISATEUR VERS LA PAGE url
+                                RequestDispatcher dispatcher = request.getRequestDispatcher(url);
+                                dispatcher.forward(request, response);
+                            } catch (JspIntrouvableException e) {
+                                response.setContentType("text/html");
+                                response.setCharacterEncoding( "UTF-8" );
+                                
+                                out.println("<!DOCTYPE html>");
+                                out.println("<html>");
+                                out.println("<head>");
+                                out.println("<meta charset=\"utf-8\" />");
+                                out.println("<title>Erreur ! Vue introuvable</title>");
+                                out.println("</head>");
+                                out.println("<body style=\"text-align:center\">");
+                                out.println("<h1 style=\"font-family:Courier New \">» Erreur!! Vue introuvable</h1>");
+                                out.println("<h3>La vue associee a cette requete est introuvable. Veuillez verifier l'attribut url du ModelView</h3>");
+                                out.println("<p style=\"font-style:italic\">" + e.getMessage() + "</p>");
+                                out.println("</body>");
+                                out.println("</html>");
                             }
-                            // REDIRIGER L'UTILISATEUR VERS LA PAGE url
-                            RequestDispatcher dispatcher = request.getRequestDispatcher(url);
-                            dispatcher.forward(request, response);
-                        } catch (JspIntrouvableException e) {
-                            response.setContentType("text/html");
-                            response.setCharacterEncoding( "UTF-8" );
                             
-                            out.println("<!DOCTYPE html>");
-                            out.println("<html>");
-                            out.println("<head>");
-                            out.println("<meta charset=\"utf-8\" />");
-                            out.println("<title>Erreur ! Vue introuvable</title>");
-                            out.println("</head>");
-                            out.println("<body style=\"text-align:center\">");
-                            out.println("<h1 style=\"font-family:Courier New \">» Erreur!! Vue introuvable</h1>");
-                            out.println("<h3>La vue associee a cette requete est introuvable. Veuillez verifier l'attribut url du ModelView</h3>");
-                            out.println("<p style=\"font-style:italic\">" + e.getMessage() + "</p>");
-                            out.println("</body>");
-                            out.println("</html>");
-                        }
-                        
-                    } else {
-                        try {
-                            throw new TypeRetourException("La methode : \"" + result.getMethode() + "()\" associee a cette URI : '<u>" + uri + "</u>' retourne un type que l'application ne reconnait pas.");
-                        } catch (TypeRetourException e) {
-                            response.setContentType("text/html");
-                            response.setCharacterEncoding( "UTF-8" );
-                            
-                            out.println("<!DOCTYPE html>");
-                            out.println("<html>");
-                            out.println("<head>");
-                            out.println("<meta charset=\"utf-8\" />");
-                            out.println("<title>Erreur ! Type de retour non reconnu.</title>");
-                            out.println("</head>");
-                            out.println("<body style=\"text-align:center\">");
-                            out.println("<h1 style=\"font-family:Courier New \">» Erreur!! Type de retour non reconnu</h1>");
-                            out.println("<h3>Le type de retour de la methode associee a cette ressource n'est pas reconnu.</h3>");
-                            out.println("<p style=\"font-style:italic\">" + e.getMessage() + "</p>");
-                            out.println("</body>");
-                            out.println("</html>");
-                        }
+                        } else {
+                            try {
+                                throw new TypeRetourException("La methode : \"" + result.getMethode() + "\" associee a cette URI : '<u>" + uri + "</u>' retourne un type que l'application ne reconnait pas.");
+                            } catch (TypeRetourException e) {
+                                response.setContentType("text/html");
+                                response.setCharacterEncoding( "UTF-8" );
+                                
+                                out.println("<!DOCTYPE html>");
+                                out.println("<html>");
+                                out.println("<head>");
+                                out.println("<meta charset=\"utf-8\" />");
+                                out.println("<title>Erreur ! Type de retour non reconnu.</title>");
+                                out.println("</head>");
+                                out.println("<body style=\"text-align:center\">");
+                                out.println("<h1 style=\"font-family:Courier New \">» Erreur!! Type de retour non reconnu</h1>");
+                                out.println("<h3>Le type de retour de la methode associee a cette ressource n'est pas reconnu.</h3>");
+                                out.println("<p style=\"font-style:italic\">" + e.getMessage() + "</p>");
+                                out.println("</body>");
+                                out.println("</html>");
+                            }
 
+                            
+                            
+                        }
                         
-                        
+                        methode_trouvee = true;
+                        log ("9 - L'instance est : " + String.valueOf(methode_trouvee));
+                        out.println("9 - " + String.valueOf(methode_trouvee));
+
+                        break;
+
                     }
-                    
-                    methode_trouvee = true;
-
-                    break;
-
                 }
+            } catch (IndexOutOfBoundsException e) {
+                log("Exception capturee dans la servlet : " + e.getMessage(), e);
+            } catch (ClassNotFoundException e) {
+                log("La classe specifiee est introuvable : " + e.getMessage(), e);
+            } catch (SecurityException e) {
+                log("Acces a la methode refuse : " + e.getMessage(), e);
+            } catch (Exception e) {
+                log("Une autre erreur est survenue : " + e.getMessage(), e);
             }
 
             if (methode_trouvee == false){
@@ -327,9 +344,9 @@ public class FrontServlet extends HttpServlet{
                 // log(String.valueOf(directory.list().length));
                 // log(String.valueOf(directory.listFiles().length));
                 scanDirectory(directory, controllerPackage);
-                // text = text + "\n" + scanDirectory(directory, controllerPackage);
+                
             } else {
-                // AVADIKA THROW EXCEPTION - LE PACKAGE DE CONTROLEUR N'EXISTE PAS
+                // LE PACKAGE DE CONTROLEUR N'EXISTE PAS
                 throw new PackageIntrouvableException ("Le repertoire : " + directory.getAbsolutePath() + " n'existe pas");
             }
         
@@ -339,7 +356,6 @@ public class FrontServlet extends HttpServlet{
             throw e;
         }
         
-        // return text;
     }
 
 
@@ -369,7 +385,18 @@ public class FrontServlet extends HttpServlet{
                                         // UNE URL EST UTILISEE POUR ANNOTER DEUX FONCTIONS DIFFERENTES
                                         throw new MethodeUrlConflitException ("Attention ! l'URI : \"/" + attribut + "\" est utilisee comme '@Get(url = \"/" + attribut + "') pour annoter deux methodes differentes.");
                                     }
-                                    Mapping entry = new Mapping(clazz.getName(), m.getName());
+                                    // Mapping entry = new Mapping(clazz.getName(), m.getName());
+                                    Mapping entry = new Mapping(clazz.getName(), m);
+                                    methodeEtController.put(attribut, entry);
+                                } else if (m.isAnnotationPresent(annotations.Post.class)){
+                                    Post methodAnnotation = m.getAnnotation(annotations.Post.class);
+                                    String attribut = methodAnnotation.url();
+                                    if (methodeEtController.containsKey(methodAnnotation.url())) {
+                                        // UNE URL EST UTILISEE POUR ANNOTER DEUX FONCTIONS DIFFERENTES
+                                        throw new MethodeUrlConflitException ("Attention ! l'URI : \"/" + attribut + "\" est utilisee comme '@Post(url = \"/" + attribut + "') pour annoter deux methodes differentes.");
+                                    }
+                                    // Mapping entry = new Mapping(clazz.getName(), m.getName());
+                                    Mapping entry = new Mapping(clazz.getName(), m);
                                     methodeEtController.put(attribut, entry);
                                 }
                             }
@@ -391,52 +418,82 @@ public class FrontServlet extends HttpServlet{
 
 
 
-
-    public static Object execMethod(Object o, String methodName, Object[] params){
+    private Object execMethod(Class<?> classe, Method method, HttpServletRequest request) throws NoArgumentFoundException{
     
         Object a_retourner = new Object();
+
         
-        if(params != null && params.length > 0){
+        
+        try {
             
-            Class<?>[] parameterTypes = new Class<?>[params.length];
-            for (int i = 0; i < params.length; i++){
-                parameterTypes[i] = params[i].getClass();
+            Object instanceClass = classe.getDeclaredConstructor().newInstance();
+            
+            
+            
+            
+            
+            // TABLEAU DES PARAMETRE DE LA METHODE
+            Parameter[] parametres = method.getParameters();
+            
+            // VARIABLE QUI CONTIENDRA LES VALEURS DE PARAMETRE A DONNER POUR LA METHODE
+            Object[] params = new String[parametres.length];
+            
+            
+                
+            
+            // log(String.valueOf(method.getParameterCount()));
+            if(method.getParameterCount() > 0){
+                for(int i=0; i < method.getParameterCount(); i++) {
+                    params[i] = null;
+                    for (Enumeration<String> nomParametresEnvoyees = request.getParameterNames(); nomParametresEnvoyees.hasMoreElements() ;){
+                        String currentParamName = nomParametresEnvoyees.nextElement();
+                        if(currentParamName.equalsIgnoreCase(parametres[i].getName())){
+                            params[i] = request.getParameter(parametres[i].getName());
+                            break;
+                        } else if (currentParamName.equalsIgnoreCase(parametres[i].getAnnotation(Param.class).name())) {
+                            params[i] = request.getParameter(parametres[i].getAnnotation(Param.class).name());
+                            break;
+                        }
+                    }
+                }
+
+                if (params.length > 0) {
+                    a_retourner = method.invoke(instanceClass, params);
+                } else {
+                    throw new NoArgumentFoundException("Aucune parametre correspondante aux parametres attendus. Cette methode exige " + params.length + " parametres");
+                }
+            } else {
+                a_retourner = method.invoke(instanceClass);
             }
-            try {
-                Method methode = o.getClass().getDeclaredMethod(methodName, parameterTypes);
-                a_retourner = methode.invoke(o, params);
-            } catch (NoSuchMethodException e) {
-                throw new RuntimeException(e);
-            } catch (InvocationTargetException e) {
-                throw new RuntimeException(e);
-            } catch (IllegalAccessException e) {
-                throw new RuntimeException(e);
-            }
+            
+            // a_retourner = method.invoke(instanceClass, params);
+            
+            
+            return a_retourner;
+
+        } catch (InvocationTargetException e) {
+            log("Exception capturee dans la servlet : " + e.getMessage(), e);
+            throw new RuntimeException(e);
+        } catch (IllegalAccessException e) {
+            log("Exception capturee dans la servlet : " + e.getMessage(), e);
+            throw new RuntimeException(e);
+        } catch (MalformedParametersException e) {
+            log("Exception capturee dans la servlet : " + e.getMessage(), e);
+            throw new RuntimeException(e);
+        } catch (NoSuchMethodException e) {
+            log("Exception capturee dans la servlet : " + e.getMessage(), e);
+            throw new RuntimeException(e);
+        } catch (InstantiationException e) {
+            log("Exception capturee dans la servlet : " + e.getMessage(), e);
+            throw new RuntimeException(e);
+        } catch (IllegalArgumentException e) {
+            log("Exception capturee dans la servlet : " + e.getMessage(), e);
+            throw new RuntimeException(e);
+        } catch (NoArgumentFoundException e) {
+            log("Exception capturee dans la servlet : " + e.getMessage(), e);
+            throw e;
         }
-        else{
-            // retour = retour + "\n --> dia eto isika tafiditra ato anaty else";
-            try {
-                Method methode = o.getClass().getDeclaredMethod(methodName);
-                // retour = retour + "\n \t --> dia eto indray isika mahazo ny methode : " + methodName;
-                // retour = retour + "\n \t --> izay ho antsoin'ny objet : " + o.toString();
-                // retour = retour + "\n \t --> ahazoantsika objet Methode vaovao : " + methode.toString();
-                // System.out.println("4 - " + methode.toString());
-                a_retourner = methode.invoke(o);
-                // retour = retour + "\n \t --> dia andramantsika invoker-na ilay fonction : " + a_retourner.toString();
 
-                return a_retourner;
-
-            } catch (NoSuchMethodException e) {
-                throw new RuntimeException(e);
-            } catch (InvocationTargetException e) {
-                throw new RuntimeException(e);
-            } catch (IllegalAccessException e) {
-                throw new RuntimeException(e);
-            }
-        }
-
-        // System.out.println("5 - " + retour.toString());
-        return null;
     }
 
 

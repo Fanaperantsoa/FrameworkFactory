@@ -1,12 +1,14 @@
 package mg.itu.prom16;
 
 import java.lang.String;
+import java.lang.reflect.Method;
 
 public class Mapping {
     String classe;
-    String methode;
+    // String methode;
+    Method methode;
     
-    public Mapping(String classy, String methody){
+    public Mapping(String classy, Method methody){
         this.classe = classy;
         this.methode = methody;
     }
@@ -18,10 +20,10 @@ public class Mapping {
         this.classe = classe;
     }
 
-    public String getMethode(){
+    public Method getMethode(){
         return this.methode;
     }
-    public void setMethode(String methode) {
+    public void setMethode(Method methode) {
         this.methode = methode;
     }
 
