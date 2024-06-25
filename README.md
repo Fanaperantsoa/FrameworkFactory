@@ -24,7 +24,22 @@ Pour ce faire, suivez les consignes ci-apres :
 
         => mettre dans une seule et meme package tous les Controller que vous voudrez creer
         
-        => annoter avec l'annotation : @ControllerAnous toutes les classes que vous voudrez utiliser comme  Controller (si vous voulez specifier l'attribut ce sera : @ControllerAnous(valeur = "ce_que_vous_voulez_mettre"))
+        => annoter avec l'annotation : "@ControllerAnous" toutes les classes que vous voudrez utiliser comme  Controller (si vous voulez specifier l'attribut ce sera : @ControllerAnous(valeur = "ce_que_vous_voulez_mettre"))
+
+  - mais egalement :
+        => annoter avec l'annotation : "@Get" toutes les methodes que vous voudrez joindre a une URL de votre application
+            utilisation : @Get(url="une_url_a_vous")
+        
+        => ajouter l'option "-parameters" lors de la compilation de vos Controleurs.
+            exemple : javac -cp "votre_classpath" -d "repertoire/de/destination" -parameters "repertoire/source/Controleur.java"
+      
+        => annoter avec l'annotation : "@GetMapping" ou "@PostMapping" toutes les parametres que vous aurez passee a travers une URL ou une soumission de formulaire et que vous voudriez passer a la methode correspondante de votre application
+            utilisation : void votreMethode(@GetMapping(nom="une_parametre_passee_via_url") nom1_de_votre_parametre,  @GetMapping(nom="autre_parametre_passee_via_url") nom2_de_votre_parametre){
+                  ----- ici le contenu de votre methode -----
+            }
+      
+
+
 
 
   - Il ne vous reste plus qu'a vous lancer : Alefaaaa !!!

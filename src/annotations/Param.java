@@ -7,6 +7,6 @@ import java.lang.annotation.Target;
 
 @Target(ElementType.PARAMETER)
 @Retention(RetentionPolicy.RUNTIME)
-public @interface PostMapping {
-    String nom() default "";
+public @interface Param {
+    String name() default "";
 }

@@ -12,6 +12,7 @@ import java.io.FileNotFoundException;
 import java.io.PrintWriter;
 import java.util.List;
 import java.util.ArrayList;
+import java.util.Enumeration;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.HashMap;
@@ -28,9 +29,7 @@ import jakarta.servlet.ServletException;
 
 import Exceptions.*;
 
-import annotations.ControllerAnous;
-import annotations.Get;
-
+import annotations.*;
 import mg.itu.prom16.Mapping;
 import mg.itu.prom16.ModelView;
 
@@ -181,8 +180,13 @@ public class FrontServlet extends HttpServlet{
 
             try {
                 for(Entry<String, Mapping> entree: methodeEtController.entrySet() ){
-                    // out.println("/TestSprint/" + entree.getKey());
-                    if(uri.equals("/TestSprint/" + entree.getKey())){
+                    if (uri.equals("/TestSprint/NameFormSansAnnotation")) {
+                        RequestDispatcher dispatcher = request.getRequestDispatcher("/WEB-INF/formSansAnnotation.jsp");
+                        dispatcher.forward(request, response);
+                    } else if (uri.equals("/TestSprint/NameFormAnnotateeParam")) {
+                        RequestDispatcher dispatcher = request.getRequestDispatcher("/WEB-INF/formAvecAnnotation.jsp");
+                        dispatcher.forward(request, response);
+                    } else if(uri.equals("/TestSprint/" + entree.getKey())){
                         // out.println("------------ LISTING DES CONTROLEURS ------------");
                         Mapping result = entree.getValue();
                         // out.println(" - La classe est : " + result.getClasse());
@@ -192,54 +196,17 @@ public class FrontServlet extends HttpServlet{
             
                         Class<?> classe = Class.forName(result.getClasse());
                         log ("1 - La classe est : " + classe.toString());
-                        // out.println("1 - " + classe.toString());
-                        // Object instanceClass = classe.getDeclaredConstructor().newInstance();
-                        // log ("2 - L'instance est : " + instanceClass.toString());
-                        // out.println("2 - " + instanceClass.toString());
                         
-                        // Method method = classe.getMethod(result.getMethode());
-                        // log ("3 - La methode est : " + method.toString());
-                        // out.println("3 - " + method.toString());
-
-                        // Class<?> type_de_retour = method.getReturnType();
-                        // log ("4 - Le type de retour : " + type_de_retour.toString());
-                        // out.println("4 - " + type_de_retour.toString());
-
-                        // Class<?>[] parameterTypes = method.getParameterTypes();
-                        // log ("5 - Le nombre de parameterType est : " + String.valueOf(parameterTypes.length));
-                        // out.println("5 - " + String.valueOf(parameterTypes.length));
-
-                        // int nbParametre = method.getParameterCount();
-                        // log("6 - Le nombre de parametre est : " + String.valueOf(nbParametre));
-                        // out.println("6 - " + String.valueOf(nbParametre));
-                        
-                        Object[] params = {"Brown", "Charlie"};
-                        log("params[0] : " + params[0].getClass().toString());
-                        // out.println("7 - " + params[0].toString() + " et " + params[1].toString());
-                        // Object[] params = new Object[nbParametre];
-
-                        // int i = 0;
-                        // for (Class<?> classeParam : parameterTypes) {
-                        //     Object instanceParam = classeParam.getDeclaredConstructor().newInstance();
-                        //     params[i] = instanceParam;
-                        //     i++;
-                        // }
-
-                        
-                        // Object retour = execMethod(instanceClass, result.getMethode());
-                        // Object retour = execMethod(instanceClass, result.getMethode());
-                        Object retour = execMethod(classe, result.getMethode(), params);
+                        Object retour = execMethod(classe, result.getMethode(), request);
                         // Object retour = execMethod(instanceClass, method);
                         // out.println("8 - " + retour.toString());
 
                         Class<?> kilasy = retour.getClass();
 
                         if(kilasy.equals(String.class)/*  && method.getParameters() == null */){
-                        // if(kilasy == String.class){
                             String retourFonction = (String)retour;
                             out.println("La fonction " + result.getMethode() + " retourne --> \"" + retourFonction + "\"");
                         } else if (kilasy.equals(ModelView.class)){
-                        // } else if (kilasy == ModelView.class)){
                             ModelView mv = (ModelView) retour;
                             String url = mv.getUrl();
                             try {
@@ -276,7 +243,7 @@ public class FrontServlet extends HttpServlet{
                             
                         } else {
                             try {
-                                throw new TypeRetourException("La methode : \"" + result.getMethode() + "()\" associee a cette URI : '<u>" + uri + "</u>' retourne un type que l'application ne reconnait pas.");
+                                throw new TypeRetourException("La methode : \"" + result.getMethode() + "\" associee a cette URI : '<u>" + uri + "</u>' retourne un type que l'application ne reconnait pas.");
                             } catch (TypeRetourException e) {
                                 response.setContentType("text/html");
                                 response.setCharacterEncoding( "UTF-8" );
@@ -377,9 +344,9 @@ public class FrontServlet extends HttpServlet{
                 // log(String.valueOf(directory.list().length));
                 // log(String.valueOf(directory.listFiles().length));
                 scanDirectory(directory, controllerPackage);
-                // text = text + "\n" + scanDirectory(directory, controllerPackage);
+                
             } else {
-                // AVADIKA THROW EXCEPTION - LE PACKAGE DE CONTROLEUR N'EXISTE PAS
+                // LE PACKAGE DE CONTROLEUR N'EXISTE PAS
                 throw new PackageIntrouvableException ("Le repertoire : " + directory.getAbsolutePath() + " n'existe pas");
             }
         
@@ -389,7 +356,6 @@ public class FrontServlet extends HttpServlet{
             throw e;
         }
         
-        // return text;
     }
 
 
@@ -419,7 +385,18 @@ public class FrontServlet extends HttpServlet{
                                         // UNE URL EST UTILISEE POUR ANNOTER DEUX FONCTIONS DIFFERENTES
                                         throw new MethodeUrlConflitException ("Attention ! l'URI : \"/" + attribut + "\" est utilisee comme '@Get(url = \"/" + attribut + "') pour annoter deux methodes differentes.");
                                     }
-                                    Mapping entry = new Mapping(clazz.getName(), m.getName());
+                                    // Mapping entry = new Mapping(clazz.getName(), m.getName());
+                                    Mapping entry = new Mapping(clazz.getName(), m);
+                                    methodeEtController.put(attribut, entry);
+                                } else if (m.isAnnotationPresent(annotations.Post.class)){
+                                    Post methodAnnotation = m.getAnnotation(annotations.Post.class);
+                                    String attribut = methodAnnotation.url();
+                                    if (methodeEtController.containsKey(methodAnnotation.url())) {
+                                        // UNE URL EST UTILISEE POUR ANNOTER DEUX FONCTIONS DIFFERENTES
+                                        throw new MethodeUrlConflitException ("Attention ! l'URI : \"/" + attribut + "\" est utilisee comme '@Post(url = \"/" + attribut + "') pour annoter deux methodes differentes.");
+                                    }
+                                    // Mapping entry = new Mapping(clazz.getName(), m.getName());
+                                    Mapping entry = new Mapping(clazz.getName(), m);
                                     methodeEtController.put(attribut, entry);
                                 }
                             }
@@ -441,112 +418,55 @@ public class FrontServlet extends HttpServlet{
 
 
 
-
-    // public static Object execMethod(Object o, String methodName, Object[] params){
-    
-    //     Object a_retourner = new Object();
-        
-    //     if(params != null && params.length > 0){
-            
-    //         Class<?>[] parameterTypes = new Class<?>[params.length];
-    //         for (int i = 0; i < params.length; i++){
-    //             parameterTypes[i] = params[i].getClass();
-    //         }
-    //         try {
-    //             // Method methode = o.getClass().getDeclaredMethod(methodName, parameterTypes);
-    //             Method methode = o.getClass().getDeclaredMethod(methodName);
-    //             a_retourner = methode.invoke(o, params);
-    //         } catch (NoSuchMethodException e) {
-    //             throw new RuntimeException(e);
-    //         } catch (InvocationTargetException e) {
-    //             throw new RuntimeException(e);
-    //         } catch (IllegalAccessException e) {
-    //             throw new RuntimeException(e);
-    //         }
-    //     }
-    //     else{
-    //         // retour = retour + "\n --> dia eto isika tafiditra ato anaty else";
-    //         try {
-    //             Method methode = o.getClass().getDeclaredMethod(methodName);
-    //             // retour = retour + "\n \t --> dia eto indray isika mahazo ny methode : " + methodName;
-    //             // retour = retour + "\n \t --> izay ho antsoin'ny objet : " + o.toString();
-    //             // retour = retour + "\n \t --> ahazoantsika objet Methode vaovao : " + methode.toString();
-    //             // System.out.println("4 - " + methode.toString());
-    //             a_retourner = methode.invoke(o);
-    //             // retour = retour + "\n \t --> dia andramantsika invoker-na ilay fonction : " + a_retourner.toString();
-
-    //             return a_retourner;
-
-    //         } catch (NoSuchMethodException e) {
-    //             throw new RuntimeException(e);
-    //         } catch (InvocationTargetException e) {
-    //             throw new RuntimeException(e);
-    //         } catch (IllegalAccessException e) {
-    //             throw new RuntimeException(e);
-    //         }
-    //     }
-
-    //     // System.out.println("5 - " + retour.toString());
-    //     return null;
-    // }
-
-
-
-
-
-    private Object execMethod(Class<?> classe, String methodeName, Object... params){
+    private Object execMethod(Class<?> classe, Method method, HttpServletRequest request) throws NoArgumentFoundException{
     
         Object a_retourner = new Object();
 
         
+        
         try {
             
             Object instanceClass = classe.getDeclaredConstructor().newInstance();
-
-            Class<?>[] paramClasses = new Class<?>[params.length];
-
-            for (int i = 0; i < params.length;i++){
-                paramClasses[i] = params[i].getClass();
-                log("Le contenu de params est : " + params[i] +  " et la classe de params est : " + paramClasses[i].toString());
-            }
-                            
-            Method method = classe.getMethod(methodeName, paramClasses);
-
+            
+            
+            
+            
+            
+            // TABLEAU DES PARAMETRE DE LA METHODE
             Parameter[] parametres = method.getParameters();
             
-            String nomParametre1 = parametres[0].getName();
-            String nomParametre2 = parametres[1].getName();
-
-            log("Le nom du premier parametre de cette methode est : " + nomParametre1);
-            log("Le nom du deuxieme parametre de cette methode est : " + nomParametre2);
+            // VARIABLE QUI CONTIENDRA LES VALEURS DE PARAMETRE A DONNER POUR LA METHODE
+            Object[] params = new String[parametres.length];
             
-            // Method methode = o.getClass().getDeclaredMethod(methodName);
-            // System.out.println("4 - " + methode.toString());
-            // log("4 - " + methode.toString());
-    
-            // Parameter[] parameters = methode.getParameters();
-            // log(parameters.toString());
-            // Object prm = parameters;
-            // log(prm.toString());
-
             
-
-            // String retour = "";
-            // retour = retour + "\n \t --> dia eto indray isika mahazo ny methode : " + methode.toString();
-            // log(retour);
-            // retour = retour + "\n \t --> izay ho antsoin'ny objet : " + o.toString();
-            // log(retour);
-            // retour = retour + "\n \t --> ahazoantsika objet Methode vaovao : " + methode.toString();
-            // log(retour);
-
-            // log(String.valueOf(methode.getParameterCount()));
-            // if(method.getParameterCount() > 0){
-            //     a_retourner = method.invoke(instanceClass, params);
-            // } else {
-            //     a_retourner = method.invoke(instanceClass);
-            // }
+                
             
-            a_retourner = method.invoke(instanceClass, params);
+            // log(String.valueOf(method.getParameterCount()));
+            if(method.getParameterCount() > 0){
+                for(int i=0; i < method.getParameterCount(); i++) {
+                    params[i] = null;
+                    for (Enumeration<String> nomParametresEnvoyees = request.getParameterNames(); nomParametresEnvoyees.hasMoreElements() ;){
+                        String currentParamName = nomParametresEnvoyees.nextElement();
+                        if(currentParamName.equalsIgnoreCase(parametres[i].getName())){
+                            params[i] = request.getParameter(parametres[i].getName());
+                            break;
+                        } else if (currentParamName.equalsIgnoreCase(parametres[i].getAnnotation(Param.class).name())) {
+                            params[i] = request.getParameter(parametres[i].getAnnotation(Param.class).name());
+                            break;
+                        }
+                    }
+                }
+
+                if (params.length > 0) {
+                    a_retourner = method.invoke(instanceClass, params);
+                } else {
+                    throw new NoArgumentFoundException("Aucune parametre correspondante aux parametres attendus. Cette methode exige " + params.length + " parametres");
+                }
+            } else {
+                a_retourner = method.invoke(instanceClass);
+            }
+            
+            // a_retourner = method.invoke(instanceClass, params);
             
             
             return a_retourner;
@@ -569,6 +489,9 @@ public class FrontServlet extends HttpServlet{
         } catch (IllegalArgumentException e) {
             log("Exception capturee dans la servlet : " + e.getMessage(), e);
             throw new RuntimeException(e);
+        } catch (NoArgumentFoundException e) {
+            log("Exception capturee dans la servlet : " + e.getMessage(), e);
+            throw e;
         }
 
     }
