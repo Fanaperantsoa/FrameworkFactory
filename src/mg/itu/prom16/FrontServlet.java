@@ -72,31 +72,10 @@ public class FrontServlet extends HttpServlet{
     public void doGet(HttpServletRequest request,HttpServletResponse response) throws ServletException, IOException{
         try {
             processRequest(request, response);
-        } catch (ClassNotFoundException e) {
+        } catch (Exception e) {
             // TODO Auto-generated catch block
             e.printStackTrace();
-        } catch (InvocationTargetException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-        } catch (InstantiationException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-        } catch (IllegalAccessException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-        } catch (SecurityException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-        } catch (ServletException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-        } catch (IOException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-        } catch (NoSuchMethodException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-        }
+        } 
     }
 
     @Override
@@ -178,28 +157,27 @@ public class FrontServlet extends HttpServlet{
             // out.println(request.getRequestURI());
             // out.println(uri);
 
+            StringBuffer requestURL = request.getRequestURL();
+            String[] urlSplitted = requestURL.toString().split("/");
+            String entri = urlSplitted[urlSplitted.length-1];
+            if (urlSplitted.length <= 4) {
+                entri =  "/";
+            }
+
+            
+
             try {
                 for(Entry<String, Mapping> entree: methodeEtController.entrySet() ){
-                    if (uri.equals("/TestSprint/NameFormSansAnnotation")) {
-                        RequestDispatcher dispatcher = request.getRequestDispatcher("/WEB-INF/formSansAnnotation.jsp");
-                        dispatcher.forward(request, response);
-                    } else if (uri.equals("/TestSprint/NameFormAnnotateeParam")) {
-                        RequestDispatcher dispatcher = request.getRequestDispatcher("/WEB-INF/formAvecAnnotation.jsp");
-                        dispatcher.forward(request, response);
-                    } else if(uri.equals("/TestSprint/" + entree.getKey())){
+                    if(entri.equals(entree.getKey())){
                         // out.println("------------ LISTING DES CONTROLEURS ------------");
                         Mapping result = entree.getValue();
-                        // out.println(" - La classe est : " + result.getClasse());
-                        // out.println(" - La methode est : " + result.getMethode());
-                        
                         
             
                         Class<?> classe = Class.forName(result.getClasse());
                         log ("1 - La classe est : " + classe.toString());
                         
-                        Object retour = execMethod(classe, result.getMethode(), request);
-                        // Object retour = execMethod(instanceClass, method);
-                        // out.println("8 - " + retour.toString());
+                        Object retour = execMethod(classe, result, request);
+                        
 
                         Class<?> kilasy = retour.getClass();
 
@@ -386,7 +364,7 @@ public class FrontServlet extends HttpServlet{
                                         throw new MethodeUrlConflitException ("Attention ! l'URI : \"/" + attribut + "\" est utilisee comme '@Get(url = \"/" + attribut + "') pour annoter deux methodes differentes.");
                                     }
                                     // Mapping entry = new Mapping(clazz.getName(), m.getName());
-                                    Mapping entry = new Mapping(clazz.getName(), m);
+                                    Mapping entry = new Mapping(clazz.getName(), m.getName());
                                     methodeEtController.put(attribut, entry);
                                 } else if (m.isAnnotationPresent(annotations.Post.class)){
                                     Post methodAnnotation = m.getAnnotation(annotations.Post.class);
@@ -396,7 +374,7 @@ public class FrontServlet extends HttpServlet{
                                         throw new MethodeUrlConflitException ("Attention ! l'URI : \"/" + attribut + "\" est utilisee comme '@Post(url = \"/" + attribut + "') pour annoter deux methodes differentes.");
                                     }
                                     // Mapping entry = new Mapping(clazz.getName(), m.getName());
-                                    Mapping entry = new Mapping(clazz.getName(), m);
+                                    Mapping entry = new Mapping(clazz.getName(), m.getName());
                                     methodeEtController.put(attribut, entry);
                                 }
                             }
@@ -418,7 +396,7 @@ public class FrontServlet extends HttpServlet{
 
 
 
-    private Object execMethod(Class<?> classe, Method method, HttpServletRequest request) throws NoArgumentFoundException{
+    private Object execMethod(Class<?> classe, Mapping mapping, HttpServletRequest request) throws NoArgumentFoundException{
     
         Object a_retourner = new Object();
 
@@ -429,21 +407,34 @@ public class FrontServlet extends HttpServlet{
             Object instanceClass = classe.getDeclaredConstructor().newInstance();
             
             
+            Boolean paramExist = false;
             
+            Method[] methodes = classe.getDeclaredMethods();
+
+            Method m = null;
+            for (Method methodi : methodes) {
+                if (methodi.getName().equals(mapping.getMethode())) {
+                    paramExist = methodi.getParameterCount() > 0;
+                    m = methodi;
+                    break;
+                }
+            }
+
             
-            
-            // TABLEAU DES PARAMETRE DE LA METHODE
-            Parameter[] parametres = method.getParameters();
-            
-            // VARIABLE QUI CONTIENDRA LES VALEURS DE PARAMETRE A DONNER POUR LA METHODE
-            Object[] params = new String[parametres.length];
+
             
             
                 
             
             // log(String.valueOf(method.getParameterCount()));
-            if(method.getParameterCount() > 0){
-                for(int i=0; i < method.getParameterCount(); i++) {
+            if(paramExist){
+                // TABLEAU DES PARAMETRE DE LA METHODE
+                Parameter[] parametres = m.getParameters();
+                
+                // VARIABLE QUI CONTIENDRA LES VALEURS DE PARAMETRE A DONNER POUR LA METHODE
+                Object[] params = new String[parametres.length];
+            
+                for(int i=0; i < m.getParameterCount(); i++) {
                     params[i] = null;
                     for (Enumeration<String> nomParametresEnvoyees = request.getParameterNames(); nomParametresEnvoyees.hasMoreElements() ;){
                         String currentParamName = nomParametresEnvoyees.nextElement();
@@ -458,42 +449,23 @@ public class FrontServlet extends HttpServlet{
                 }
 
                 if (params.length > 0) {
-                    a_retourner = method.invoke(instanceClass, params);
+                    a_retourner = m.invoke(instanceClass, params);
                 } else {
                     throw new NoArgumentFoundException("Aucune parametre correspondante aux parametres attendus. Cette methode exige " + params.length + " parametres");
                 }
             } else {
-                a_retourner = method.invoke(instanceClass);
+                a_retourner = m.invoke(instanceClass);
             }
             
-            // a_retourner = method.invoke(instanceClass, params);
+            // a_retourner = m.invoke(instanceClass, params);
             
             
             return a_retourner;
 
-        } catch (InvocationTargetException e) {
+        } catch (Exception e) {
             log("Exception capturee dans la servlet : " + e.getMessage(), e);
             throw new RuntimeException(e);
-        } catch (IllegalAccessException e) {
-            log("Exception capturee dans la servlet : " + e.getMessage(), e);
-            throw new RuntimeException(e);
-        } catch (MalformedParametersException e) {
-            log("Exception capturee dans la servlet : " + e.getMessage(), e);
-            throw new RuntimeException(e);
-        } catch (NoSuchMethodException e) {
-            log("Exception capturee dans la servlet : " + e.getMessage(), e);
-            throw new RuntimeException(e);
-        } catch (InstantiationException e) {
-            log("Exception capturee dans la servlet : " + e.getMessage(), e);
-            throw new RuntimeException(e);
-        } catch (IllegalArgumentException e) {
-            log("Exception capturee dans la servlet : " + e.getMessage(), e);
-            throw new RuntimeException(e);
-        } catch (NoArgumentFoundException e) {
-            log("Exception capturee dans la servlet : " + e.getMessage(), e);
-            throw e;
         }
-
     }
 
 
