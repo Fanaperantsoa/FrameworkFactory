@@ -5,10 +5,10 @@ import java.lang.reflect.Method;
 
 public class Mapping {
     String classe;
-    // String methode;
-    Method methode;
+    String methode;
+    // Method methode;
     
-    public Mapping(String classy, Method methody){
+    public Mapping(String classy, String methody){
         this.classe = classy;
         this.methode = methody;
     }
@@ -20,10 +20,10 @@ public class Mapping {
         this.classe = classe;
     }
 
-    public Method getMethode(){
+    public String getMethode(){
         return this.methode;
     }
-    public void setMethode(Method methode) {
+    public void setMethode(String methode) {
         this.methode = methode;
     }
 
