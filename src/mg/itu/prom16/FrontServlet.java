@@ -175,7 +175,7 @@ public class FrontServlet extends HttpServlet{
                         
             
                         Class<?> classe = Class.forName(result.getClasse());
-                        log ("1 - La classe est : " + classe.toString());
+                        // log ("1 - La classe est : " + classe.toString());
                         
                         Object retour;
                         try {
@@ -187,28 +187,28 @@ public class FrontServlet extends HttpServlet{
                                 String retourFonction = (String)retour;
                                 out.println("La fonction " + result.getMethode() + " retourne --> \"" + retourFonction + "\"");
                             } else if (kilasy.equals(ModelView.class)){
-                                log ("2- Le type de retour est : " + kilasy.toString());
+                                // log ("2- Le type de retour est : " + kilasy.toString());
                                 ModelView mv = (ModelView) retour;
                                 String url = mv.getUrl();
-                                log ("3- L'URL de destination est : " + url);
+                                // log ("3- L'URL de destination est : " + url);
                                 try {
                                     // NECESSAIRE POUR LANCER UNE EXCEPTION SPECIFIQUE AU CAS OU LE .jsp N'EXISTE PAS
                                     thisExist(url);
                                     HashMap<String, Object> data = mv.getData();
-                                    log ("4- Le fichier JSP existe");
+                                    // log ("4- Le fichier JSP existe");
                                     
-                                    log ("5- Le contenu de data est : " + data.isEmpty());
+                                    // log ("5- Le contenu de data est : " + data.isEmpty());
                                     
-                                    log ("6- Le contenu de data est : " + data.values().toString());
+                                    // log ("6- Le contenu de data est : " + data.values().toString());
 
 
                                     // ON AJOUTE LES PARAMETRES POUR L'ENVOI
                                     if(!data.isEmpty()){
-                                        log ("7- data n'est pas vide");
+                                        // log ("7- data n'est pas vide");
                                         Set<Entry<String, Object>> entrees = data.entrySet();
                                         for (Entry<String, Object> entrie : entrees) {
-                                            log ("8_1 - La cle est : " + entrie.getKey());
-                                            log ("8_2 - La valeur est : " + entrie.getValue());
+                                            // log ("8_1 - La cle est : " + entrie.getKey());
+                                            // log ("8_2 - La valeur est : " + entrie.getValue());
                                             request.setAttribute(entrie.getKey(), entrie.getValue());
                                         }
                                     }
