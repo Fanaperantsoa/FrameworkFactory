@@ -37,6 +37,12 @@ Pour ce faire, suivez les consignes ci-apres :
             utilisation : void votreMethode(@GetMapping(nom="une_parametre_passee_via_url") nom1_de_votre_parametre,  @GetMapping(nom="autre_parametre_passee_via_url") nom2_de_votre_parametre){
                   ----- ici le contenu de votre methode -----
             }
+    
+  - en outre :
+        => annoter avec l'annotation : '@Param(name="nom_que_vous_voudrez")' chaque argument de fonction avec lesquels vous voudrez recuperer les parametres envoyes via requete HTTP pour les traiter dans la fonction
+            ATTENTION !! Les noms de vos parametres envoyes via la methode GET ou POST doivent imperativement correspondre soit aux noms de vos variables en arguments soit aux valeurs des annotations @Param
+
+  - 
       
 
 
