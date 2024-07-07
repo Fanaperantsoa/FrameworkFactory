@@ -238,6 +238,9 @@ public class FrontServlet extends HttpServlet{
                                 try {
                                     throw new TypeRetourException("La methode : \"" + result.getMethode() + "\" associee a cette URI : '<u>" + uri + "</u>' retourne un type que l'application ne reconnait pas.");
                                 } catch (TypeRetourException e) {
+                                    e.printStackTrace();
+                                    log("Tandremo fa misy Exception mitranga eto : " + e.getMessage());
+
                                     response.setContentType("text/html");
                                     response.setCharacterEncoding( "UTF-8" );
                                     
@@ -276,6 +279,25 @@ public class FrontServlet extends HttpServlet{
                             out.println("<body style=\"text-align:center\">");
                             out.println("<h1 style=\"font-family:Courier New \">» Erreur!! Parametre de methode non annote</h1>");
                             out.println("<h3>Le(s) parametre(s) de la methode n'est(ne sont) pas annote(s).</h3>");
+                            out.println("<p style=\"font-style:italic\">" + e.getMessage() + "</p>");
+                            out.println("</body>");
+                            out.println("</html>");
+
+                        } catch (NullRequestParamException e) {
+                            log("Une autre erreur est survenue : " + e.getMessage(), e);
+            
+                            response.setContentType("text/html");
+                            response.setCharacterEncoding( "UTF-8" );
+                                
+                            out.println("<!DOCTYPE html>");
+                            out.println("<html>");
+                            out.println("<head>");
+                            out.println("<meta charset=\"utf-8\" />");
+                            out.println("<title>Erreur ! Parametre dans la requete vide.</title>");
+                            out.println("</head>");
+                            out.println("<body style=\"text-align:center\">");
+                            out.println("<h1 style=\"font-family:Courier New \">» Erreur!! Parametre dans la requete vide</h1>");
+                            out.println("<h3>Certains champs du formulaire sont envoyes vides.</h3>");
                             out.println("<p style=\"font-style:italic\">" + e.getMessage() + "</p>");
                             out.println("</body>");
                             out.println("</html>");
@@ -450,7 +472,7 @@ public class FrontServlet extends HttpServlet{
 
 
 
-    private Object execMethod(Class<?> classe, Mapping mapping, HttpServletRequest request) throws NoAnnotationParamException, NoArgumentFoundException, InstantiationException, IllegalAccessException, InvocationTargetException, NoSuchMethodException{
+    private Object execMethod(Class<?> classe, Mapping mapping, HttpServletRequest request) throws NoAnnotationParamException, NoArgumentFoundException, InstantiationException, IllegalAccessException, InvocationTargetException, NoSuchMethodException, ClassNotFoundException, NullRequestParamException{
     
         Object a_retourner = new Object();
 
@@ -500,11 +522,26 @@ public class FrontServlet extends HttpServlet{
                       
                     String paramName = parametres[i].getName();
                     log ("       g) le nom du parametre selectionnee est : " + paramName);
-                    if ((parametres[i].isAnnotationPresent(Param.class) && nomParametresEnvoyees != null) || (!(parametres[i].isAnnotationPresent(Param.class) && nomParametresEnvoyees == null))) {    
-                        paramName = parametres[i].getAnnotation(Param.class).name(); 
+                    log ("       g1) le nom du parametre parametre[" + i + "] est : " + parametres[i].getType().getName());
+                    log ("       g2) le nom du parametre Class.forName('CustomSession') est : " + Class.forName("mg.itu.prom16.CustomSession"));
+
+                    if ((parametres[i].isAnnotationPresent(Param.class) && nomParametresEnvoyees != null) || (!(parametres[i].isAnnotationPresent(Param.class)) && nomParametresEnvoyees == null)) {    
+                        if (parametres[i].isAnnotationPresent(Param.class)) {
+                            log ("       alpha)    le nom du parametre selectionnee DEVRAIT ETRE : " + parametres[i].getAnnotation(Param.class).name());
+                            paramName = parametres[i].getAnnotation(Param.class).name(); 
+                        }
                         log ("       g) le nom du parametre selectionnee DEVRAIT ETRE : " + parametres[i].getAnnotation(Param.class).name());
                         log ("        -- le nom du parametre selectionnee est : " + paramName);
+
+                        if (parametres[i].getType().equals(Class.forName("mg.itu.prom16.CustomSession"))) {
+                            log("        ** Ce parametre est un objet de type : CustomSession !");
+                            
+                        }
+                    } else if (parametres[i].getType().equals(Class.forName("mg.itu.prom16.CustomSession"))) {
+                        log("        ** Ce parametre est un objet de type : CustomSession !");
+                        paramName =  parametres[i].getName();
                     } else {    
+                        log ("NoAnnotationParamException => ETU 0057 : Les parametres ne sont pas annotees ou alors la requete ne contient aucun parametre !!");
                         throw new NoAnnotationParamException("ETU 0057 : Les parametres ne sont pas annotees ou alors la requete ne contient aucun parametre !!");    
                     }
     
@@ -527,64 +564,99 @@ public class FrontServlet extends HttpServlet{
                         while (nomParametresEnvoyees.hasMoreElements()) {
                             String currentParamName = nomParametresEnvoyees.nextElement();
                             
-                            log ("       m) le nom du parametre envoye est : " + currentParamName);
-                            log ("       m_2) le nom du parametre envoye est : " + paramName);
-                            for (int k = 0; k < fields.length; k++) {
-                                log("           le nom de l'attribut est : " + fields[k].getName());
-                                // TANDREMO ITO MANARAKA ITO FA METY MITERAKA => java.lang.NullPointerException: Cannot invoke "annotations.AttribObjet.value()" because the return value of "java.lang.reflect.Field.getAnnotation(java.lang.Class)" is null
-                                // REHEFA MISY FIELD NEFA TSY ANNOTEE @AttribObject
-                                // log("           la valeur de son annotation est : " + fields[k].getAnnotation(AttribObjet.class).value());
+                            if(request.getParameter(currentParamName) == null || request.getParameter(currentParamName) == ""){
+                                throw new NullRequestParamException("Le(s) parametre(s) envoye dans la requete est vide !");
+                            } else {
 
-                                log("           =================> : " + currentParamName.startsWith(paramName + "."));
-                                if (currentParamName.startsWith(paramName + ".")) {
-                                    int indiceNext = (paramName + ".").length();
-                                    log ("       n) l'index de depart de la lecture de l'attribut est : " + indiceNext);
-                                    String attribName = currentParamName.substring(indiceNext);
-                                    log ("       ------ le nom du parametre envoye est : " + currentParamName);
-                                    log ("       o) le nom de l'attribut est donc : " + attribName);
-                                    if (fields[k].isAnnotationPresent(AttribObjet.class)) {
-                                        log ("       --- la valeur de l'annotation est quand a elle : " + fields[k].getAnnotation(AttribObjet.class).value());
-                                        log ("       =================> : " + attribName.equals(fields[k].getAnnotation(AttribObjet.class).value()));
-                                        if (attribName.equals(fields[k].getAnnotation(AttribObjet.class).value())) {
-                                            valueObjects[k] = request.getParameter(currentParamName);
-                                            paramCorrespondAnnotation = true;
-                                            log ("       p) la valeur du parametre est : " + valueObjects[k]);
-                                            break;
+                                log ("       m) le nom du parametre envoye est : " + currentParamName);
+                                log ("       m_2) le nom du parametre envoye est : " + paramName);
+                                for (int k = 0; k < fields.length; k++) {
+                                    log("           le nom de l'attribut est : " + fields[k].getName());
+                                    // TANDREMO ITO MANARAKA ITO FA METY MITERAKA => java.lang.NullPointerException: Cannot invoke "annotations.AttribObjet.value()" because the return value of "java.lang.reflect.Field.getAnnotation(java.lang.Class)" is null
+                                    // REHEFA MISY FIELD NEFA TSY ANNOTEE @AttribObject
+                                    // TSARA ATSOFOKA ANATY  if(field[k].isAnnotationPresent(AttribObject.class)) { ... } AMIN'IZAY VOASOROKA ILAY EXCEPTION 
+                                    // log("           la valeur de son annotation est : " + fields[k].getAnnotation(AttribObjet.class).value());
+
+                                    log("           =================> : " + currentParamName.startsWith(paramName + "."));
+                                    if (currentParamName.startsWith(paramName + ".")) {
+                                        int indiceNext = (paramName + ".").length();
+                                        log ("       n) l'index de depart de la lecture de l'attribut est : " + indiceNext);
+                                        String attribName = currentParamName.substring(indiceNext);
+                                        log ("       ------ le nom du parametre envoye est : " + currentParamName);
+                                        log ("       o) le nom de l'attribut est donc : " + attribName);
+                                        if (fields[k].isAnnotationPresent(AttribObjet.class)) {
+                                            log ("       --- la valeur de l'annotation est quand a elle : " + fields[k].getAnnotation(AttribObjet.class).value());
+                                            log ("       =================> : " + attribName.equals(fields[k].getAnnotation(AttribObjet.class).value()));
+                                            if (attribName.equals(fields[k].getAnnotation(AttribObjet.class).value())) {
+                                                valueObjects[k] = request.getParameter(currentParamName);
+                                                paramCorrespondAnnotation = true;
+                                                log ("       p) la valeur du parametre est : " + valueObjects[k]);
+                                                break;
+                                            } else {
+                                                // Ceci voudra dire que dans cette tour de boucle aucune correspondance n'a ete trouvee --> si au bout de la boucle, cette valeur reste false alors une Exception va etre throwee un peu plus bas
+                                                paramCorrespondAnnotation = false;
+                                            }
                                         } else {
-                                            // Ceci voudra dire que dans cette tour de boucle aucune correspondance n'a ete trouvee --> si au bout de la boucle, cette valeur reste false alors une Exception va etre throwee un peu plus bas
-                                            paramCorrespondAnnotation = false;
-                                        }
-                                    } else {
-                                        if (attribName.equals(fields[k].getName())) {
-                                            valueObjects[k] = request.getParameter(currentParamName);
-                                            paramCorrespondNomVariable = true;
-                                            log ("       p') la valeur du parametre est : " + valueObjects[k]);
-                                        } else {
-                                            paramCorrespondNomVariable = false;
+                                            if (attribName.equals(fields[k].getName())) {
+                                                valueObjects[k] = request.getParameter(currentParamName);
+                                                paramCorrespondNomVariable = true;
+                                                log ("       p') la valeur du parametre est : " + valueObjects[k]);
+                                            } else {
+                                                paramCorrespondNomVariable = false;
+                                            }
                                         }
                                     }
                                 }
-                            }
-                            if (!paramCorrespondAnnotation && !paramCorrespondNomVariable) {
-                                // Il y a eu au moins un parametre dans la requete qui n'a correspondu a aucun annotation ou nom d'attribut
-                                throw new NoArgumentFoundException("Il y a au moins UN nom de parametre envoye dans la requete qui ne correspond ni a la valeur de l'annotation de l'attribut : '" + currentParamName + "' de l'instance : '" + obj.toString() + "' de la classe '" + classiko.getName() + "'  donne en argument a la methode '" + m.toString() + "' liee a cet URL, ni ne correspond au nom du parametre de cette methode.");
+                                if (!paramCorrespondAnnotation && !paramCorrespondNomVariable) {
+                                    // Il y a eu au moins un parametre dans la requete qui n'a correspondu a aucun annotation ou nom d'attribut
+                                    throw new NoArgumentFoundException("Il y a au moins UN nom de parametre envoye dans la requete qui ne correspond ni a la valeur de l'annotation de l'attribut : '" + currentParamName + "' de l'instance : '" + obj.toString() + "' de la classe '" + classiko.getName() + "'  donne en argument a la methode '" + m.toString() + "' liee a cet URL, ni ne correspond au nom du parametre de cette methode.");
+                                }
                             }
                         }
                         obj = process(obj, valueObjects);
                         params[i] = obj;
 
-                    } else { 
+                    } else if (parametres[i].getType().equals(Class.forName("mg.itu.prom16.CustomSession"))) {
+                        
+                        // CREATION DE CustomSession A PARTIR DE LA REQUETE ET DES DONNEES RECUES VIA LES FORMULAIRES DE Login
+                        CustomSession cs = new CustomSession(request.getSession());
+                        
+                        
+                        String value = "";
+                        while(nomParametresEnvoyees.hasMoreElements()) {
+                            String currentParamName = nomParametresEnvoyees.nextElement();
+
+                            if(request.getParameter(currentParamName) == null || request.getParameter(currentParamName) == ""){
+                                throw new NullRequestParamException("Le(s) parametre(s) envoye dans la requete est vide !");
+                            } else {
+                                value = request.getParameter(currentParamName);    
+                            
+                                cs.add(currentParamName, value);
+                            }
+                        }
+                        
+                        params[i] = cs;
+                        log ("       h') le type de ce parametre est : " + parametres[i].getType().getName());  
+                        log ("       i') la classe de ce parametre est : " + parametres[i].getClass().getName());
+                        
+
+                    } else {  // DANS CE CAS DE FIGURE, LES PARAMETRES SONT CONSIDERES COMME DES STRINGS
                         // log ("       h') le type de cette parametre est : " + parametres[i].getType().getName());  
                         while(nomParametresEnvoyees.hasMoreElements()) {
                             String currentParamName = nomParametresEnvoyees.nextElement();
-                            if(currentParamName.equalsIgnoreCase(paramName)){    
-                                params[i] = request.getParameter(paramName);    
-                                break;    
-                            } else if (currentParamName.equalsIgnoreCase(parametres[i].getName())) {
-                                params[i] = request.getParameter(currentParamName);  
-                                break;  
+                            if(request.getParameter(currentParamName) == null || request.getParameter(currentParamName) == ""){
+                                throw new NullRequestParamException("Le(s) parametre(s) envoye dans la requete est vide !");
                             } else {
-                                throw new NoArgumentFoundException("Le nom de parametre envoye dans la requete ne correspond pas a la valeur de l'annotation de la methode '" + m.toString() + "' liee a cet URL ; ni aux noms des arguments de la methode non plus.");
+                                if(currentParamName.equalsIgnoreCase(paramName)){    
+                                    params[i] = request.getParameter(paramName);
+                                    break;    
+                                } else if (currentParamName.equalsIgnoreCase(parametres[i].getName())) {
+                                    params[i] = request.getParameter(currentParamName);
+                                    break;  
+                                } else {
+                                    throw new NoArgumentFoundException("Le nom de parametre envoye dans la requete ne correspond pas a la valeur de l'annotation de la methode '" + m.toString() + "' liee a cet URL ; ni aux noms des arguments de la methode non plus.");
+                                }
+                                
                             }
 
                         }
@@ -637,6 +709,11 @@ public class FrontServlet extends HttpServlet{
         } catch (ClassNotFoundException e) {
             // TODO Auto-generated catch block
             e.printStackTrace();
+            throw e;
+        } catch (NullRequestParamException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+            throw e;
         }
         
         return a_retourner;

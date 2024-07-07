@@ -1,7 +1,6 @@
 package mg.itu.prom16;
 
 import java.lang.String;
-import java.lang.reflect.Method;
 
 public class Mapping {
     String classe;
