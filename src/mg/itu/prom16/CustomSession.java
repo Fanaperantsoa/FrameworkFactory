@@ -1,12 +1,12 @@
 package mg.itu.prom16;
 
-import java.util.Enumeration;
-import java.util.HashMap;
-
 import jakarta.servlet.ServletContext;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 
+
 public class CustomSession {
+
     private HttpSession session;
     
 
@@ -15,6 +15,20 @@ public class CustomSession {
         this.session = httpSession;
     }
 
+    public CustomSession(HttpServletRequest req){
+        // ServletContext sc = getServletContext();
+        this.session = req.getSession();
+    }
+
+
+    // GETTERS & SETTERS
+    public HttpSession getSessiom() {
+        return this.session;
+    }
+
+    public void setSessiom(HttpSession newHttpSession) {
+        this.session = newHttpSession;
+    }
 
 
     public Object get(String key) {
@@ -38,16 +52,18 @@ public class CustomSession {
     }
     
     
-    public HttpSession export () {
-        HashMap<String, Object> data = new HashMap<String, Object>();
+    // public HttpSession export () {
+    //     HashMap<String, Object> data = new HashMap<String, Object>();
 
-        Enumeration<String> attributeNames = session.getAttributeNames();
-
-        
-
+    //     Enumeration<String> attributeNames = session.getAttributeNames();
 
         
 
-        return this.session;
-    }
+
+        
+
+    //     return this.session;
+    // }
+
+
 }
