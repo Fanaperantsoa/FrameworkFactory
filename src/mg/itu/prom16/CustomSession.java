@@ -22,11 +22,11 @@ public class CustomSession {
 
 
     // GETTERS & SETTERS
-    public HttpSession getSessiom() {
+    public HttpSession getSession() {
         return this.session;
     }
 
-    public void setSessiom(HttpSession newHttpSession) {
+    public void setSession(HttpSession newHttpSession) {
         this.session = newHttpSession;
     }
 
@@ -49,6 +49,18 @@ public class CustomSession {
     public void update(String key, Object objet) {
         delete(key);
         add(key, objet);
+    }
+
+    public void kill() throws IllegalStateException{
+        // System.out.println(this.session.getId());
+        try {
+            this.session.invalidate();
+
+        } catch (IllegalStateException e) {
+            e.printStackTrace();
+            throw e;
+        }
+        // System.out.println("vita ilay fanafoanana ny HttpSession");
     }
     
     

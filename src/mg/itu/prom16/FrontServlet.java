@@ -239,7 +239,7 @@ public class FrontServlet extends HttpServlet{
                                     throw new TypeRetourException("La methode : \"" + result.getMethode() + "\" associee a cette URI : '<u>" + uri + "</u>' retourne un type que l'application ne reconnait pas.");
                                 } catch (TypeRetourException e) {
                                     e.printStackTrace();
-                                    log("Tandremo fa misy Exception mitranga eto : " + e.getMessage());
+                                    log("Faites attention parce qu'une exception est levee ici : " + e.getMessage());
 
                                     response.setContentType("text/html");
                                     response.setCharacterEncoding( "UTF-8" );
@@ -503,8 +503,8 @@ public class FrontServlet extends HttpServlet{
 
             // log(String.valueOf(method.getParameterCount()));
             if(paramExist){
-                log ("       d) la methode exige un ou des parametre(s)");
                 // TABLEAU DES PARAMETRE DE LA METHODE
+                log ("       d) la methode exige un ou des parametre(s)");
                 Parameter[] parametres = m.getParameters();
                 log ("       e) ces parametres sont : " + parametres.toString());
                 
@@ -723,7 +723,7 @@ public class FrontServlet extends HttpServlet{
 
 
     
-
+    // FONCTION POUR VERIRIFER SI UNE CHEMIN POINTANT VERS UN FICHIER JSP EXISTE OU NON (SPECIFIQUEMENT : EST-CE QU'UN FICHIER JSP DANS UN TEL REPERTOIRE EXISTE)
     public void thisExist(String url) throws JspIntrouvableException{
         File directory = new File(getServletContext().getRealPath(url));
         if (!directory.exists()) {
