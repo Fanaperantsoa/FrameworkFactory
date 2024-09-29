@@ -16,6 +16,9 @@ import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.Map.Entry;
 import java.util.Set;
+
+import com.google.gson.Gson;
+
 import java.util.HashMap;
 
 import java.io.IOException;
@@ -27,6 +30,9 @@ import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.ServletException;
+
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 
 import Exceptions.*;
 
@@ -176,17 +182,20 @@ public class FrontServlet extends HttpServlet{
             
                         Class<?> classe = Class.forName(result.getClasse());
                         log ("1 - La classe est : " + classe.toString());
+
+                        
                         
                         Object retour;
+
                         try {
+                            
                             retour = execMethod(classe, result, request);
 
                             Class<?> kilasy = retour.getClass();
+
+                            
     
-                            if(kilasy.equals(String.class)/*  && method.getParameters() == null */){
-                                String retourFonction = (String)retour;
-                                out.println("La fonction " + result.getMethode() + " retourne --> \"" + retourFonction + "\"");
-                            } else if (kilasy.equals(ModelView.class)){
+                            if (kilasy.equals(ModelView.class)){
                                 log ("2- Le type de retour est : " + kilasy.toString());
                                 ModelView mv = (ModelView) retour;
                                 String url = mv.getUrl();
@@ -202,19 +211,41 @@ public class FrontServlet extends HttpServlet{
                                     log ("6- Le contenu de data est : " + data.values().toString());
 
 
-                                    // ON AJOUTE LES PARAMETRES POUR L'ENVOI
-                                    if(!data.isEmpty()){
-                                        log ("7- data n'est pas vide");
-                                        Set<Entry<String, Object>> entrees = data.entrySet();
-                                        for (Entry<String, Object> entrie : entrees) {
-                                            log ("8_1 - La cle est : " + entrie.getKey());
-                                            log ("8_2 - La valeur est : " + entrie.getValue());
-                                            request.setAttribute(entrie.getKey(), entrie.getValue());
+
+                                    // SPRINT9 - ON TESTE SI LA CLASSE CONCERNNEE ICI EST ANNOTEE PAR @RespApi
+                                    // SI OUI ALORS NOUS ALLONS TRANSFORMER EN json LA VALEUR DE data
+                                    if (classe.isAnnotationPresent(RestApi.class)) {
+                                        // ON TRANSFORME EN json AVEC JsonBuilder POUR L'ENVOI SOUS FORMAT (text/json)
+                                        if(!data.isEmpty()){
+                                            final GsonBuilder builder = new GsonBuilder();
+                                            final Gson gson = builder.create();
+
+                                            // Convertir l'objet Java en JSON
+                                            final String json = gson.toJson(data);
+                                            
+                                            // Envoyer la réponse
+                                            response.setContentType("application/json");
+                                            PrintWriter outWriter = response.getWriter();
+                                            outWriter.write(json);
+                                            outWriter.flush();
+
                                         }
+                                    } else { // ------------ COMPORTEMENT PAR DEFAUT, ON UTILISE setAttribute() et ResquestDispatcher ------------
+                                        // ON AJOUTE LES PARAMETRES POUR L'ENVOI
+                                        if(!data.isEmpty()){
+                                            log ("7- data n'est pas vide");
+                                            Set<Entry<String, Object>> entrees = data.entrySet();
+                                            for (Entry<String, Object> entrie : entrees) {
+                                                log ("8_1 - La cle est : " + entrie.getKey());
+                                                log ("8_2 - La valeur est : " + entrie.getValue());
+                                                request.setAttribute(entrie.getKey(), entrie.getValue());
+                                            }
+                                        }
+                                        // REDIRIGER L'UTILISATEUR VERS LA PAGE url
+                                        RequestDispatcher dispatcher = request.getRequestDispatcher(url);
+                                        dispatcher.forward(request, response);
                                     }
-                                    // REDIRIGER L'UTILISATEUR VERS LA PAGE url
-                                    RequestDispatcher dispatcher = request.getRequestDispatcher(url);
-                                    dispatcher.forward(request, response);
+
                                     
                                 } catch (JspIntrouvableException e) {
                                     response.setContentType("text/html");
@@ -234,6 +265,42 @@ public class FrontServlet extends HttpServlet{
                                     out.println("</html>");
                                 }
                                 
+                            } else if (kilasy.equals(String.class)/*  && method.getParameters() == null */) {
+                                String retourFonction = (String)retour;
+                                
+                                // SPRINT ANTERIEUR
+                                // out.println("La fonction " + result.getMethode() + " retourne --> \"" + retourFonction + "\"");
+
+                                final GsonBuilder builder = new GsonBuilder();
+                                final Gson gson = builder.create();
+
+                                // Convertir la valeur de retour de la methode en JSON
+                                final String json = gson.toJson(retourFonction);
+
+                                // Envoyer la réponse
+                                response.setContentType("text/json");
+                                PrintWriter outWriter = response.getWriter();
+                                outWriter.write(json);
+                                outWriter.flush();
+
+                            } else if (kilasy.equals(Object.class)) {
+                                Object retourFonction = retour;
+                                
+                                // SPRINT ANTERIEUR
+                                // out.println("La fonction " + result.getMethode() + " retourne --> \"" + retourFonction + "\"");
+
+                                final GsonBuilder builder = new GsonBuilder();
+                                final Gson gson = builder.create();
+
+                                // Convertir la valeur de retour de la methode en JSON
+                                final String json = gson.toJson(retourFonction);
+
+                                // Envoyer la réponse
+                                response.setContentType("text/json");
+                                PrintWriter outWriter = response.getWriter();
+                                outWriter.write(json);
+                                outWriter.flush();
+
                             } else {
                                 try {
                                     throw new TypeRetourException("La methode : \"" + result.getMethode() + "\" associee a cette URI : '<u>" + uri + "</u>' retourne un type que l'application ne reconnait pas.");
@@ -533,6 +600,7 @@ public class FrontServlet extends HttpServlet{
                         log ("       g) le nom du parametre selectionnee DEVRAIT ETRE : " + parametres[i].getAnnotation(Param.class).name());
                         log ("        -- le nom du parametre selectionnee est : " + paramName);
 
+                        // ?????????????????????????????????????????????????????????????????????????????????????????????????????
                         if (parametres[i].getType().equals(Class.forName("mg.itu.prom16.CustomSession"))) {
                             log("        ** Ce parametre est un objet de type : CustomSession !");
                             
