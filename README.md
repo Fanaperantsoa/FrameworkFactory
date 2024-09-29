@@ -41,7 +41,7 @@ Pour ce faire, suivez les consignes ci-apres :
   - en outre :
         => annoter avec l'annotation : '@Param(name="nom_que_vous_voudrez")' chaque argument de fonction avec lesquels vous voudrez recuperer les parametres envoyes via requete HTTP pour les traiter dans la fonction
             ATTENTION !! Les noms de vos parametres envoyes via la methode GET ou POST doivent imperativement correspondre soit aux noms de vos variables en arguments soit aux valeurs des annotations @Param
-
+        => annoter avec l'annotation : '@RestApi' toutes les classes utilisees en vue de REST services
   - 
       
 
