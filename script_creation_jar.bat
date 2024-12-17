@@ -32,7 +32,7 @@ for /r "%racine%\src" %%f in (*.java) do copy "%%f" "%racine%\out"
 
 echo "-------------------- ON ESSAIE LA COMPILATION --------------------------------"
 :: ON COMPILE TOUS LES .java FRAICHEMENT COPIES DANS out
-javac -cp "%racine%\lib\*" -d "%racine%\classes" "%racine%\out\*.java"
+javac -cp %racine%\lib\* -d %racine%\classes %racine%\out\*.java
 :: -cp veut dire classpath
 echo "-------------------- APRES TENTATIVE COMPILATION --------------------------------"
 

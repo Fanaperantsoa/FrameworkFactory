@@ -46,4 +46,13 @@ public class Mapping {
         this.collectionVerbeMethode = newCollectionVerbeMethode;
     }
 
+    public VerbeMethode getVerbeMethode (String nomVerbe) {
+        for (VerbeMethode vbM : this.getCollectionVerbeMethode()) {
+            if (vbM.getVerbe() == nomVerbe) {
+                return vbM;
+            }
+        }
+        return null;
+    }
+
 }

@@ -52,9 +52,15 @@ public class FrontServlet extends HttpServlet{
 
     private PackageVideException initPackageVideException;
 
-    private MethodeUrlConflitException methodUrlConflitException;
+    private MethodeUrlConflitException initMethodUrlConflitException;
 
-    private VerbeMethodeAlreadyExistException verbeMethodeAlreadyExistException;
+    private VerbeMethodeAlreadyExistException initVerbeMethodeAlreadyExistException;
+
+    private ClassNotFoundException initClassNotFoundException;
+
+    private VerbeAnnotationAlreadyExistException initVerbeAnnotationAlreadyExistException;
+
+    private MethodeAnnotationIncoherenteException initMethodeAnnotationIncoherenteException;
 
 
 
@@ -65,17 +71,33 @@ public class FrontServlet extends HttpServlet{
         try {
             ServletConfig config = getServletConfig();
             scanner(config);
+            
         } catch (PackageIntrouvableException e) {
             this.initPackageIntrouvableException = e;
             log("Exception during servlet initialization", e);
+
         } catch (PackageVideException e) {
             this.initPackageVideException = e;
             log("Exception during servlet initialization", e);
+
         } catch (MethodeUrlConflitException e) {
-            this.methodUrlConflitException = e;
+            this.initMethodUrlConflitException = e;
             log("Exception during servlet initialization", e);
+
+        } catch (VerbeAnnotationAlreadyExistException e) {
+            this.initVerbeAnnotationAlreadyExistException = e;
+            log("Exception during servlet initialization", e);
+
+        } catch (MethodeAnnotationIncoherenteException e) {
+            this.initMethodeAnnotationIncoherenteException = e;
+            log("Exception during servlet initialization", e);
+
         } catch (VerbeMethodeAlreadyExistException e) {
-            this.verbeMethodeAlreadyExistException = e;
+            this.initVerbeMethodeAlreadyExistException = e;
+            log("Exception during servlet initialization", e);
+
+        } catch (ClassNotFoundException e) {
+            this.initClassNotFoundException = e;
             log("Exception during servlet initialization", e);
         }
         
@@ -145,7 +167,7 @@ public class FrontServlet extends HttpServlet{
             out.println("</html>");
 
         
-        } else if (methodUrlConflitException != null){
+        } else if (initMethodUrlConflitException != null){
             // ERREUR POUR UN PACKAGE VIDE !!
             response.setContentType("text/html");
             response.setCharacterEncoding( "UTF-8" );
@@ -159,18 +181,18 @@ public class FrontServlet extends HttpServlet{
             out.println("<body style=\"text-align:center\">");
             out.println("<h1 style=\"font-family:Courier New \">» Erreur!! Conflit entre annotation.</h1>");
             out.println("<h3>Une meme URL est utilisee pour annoter deux methodes differentes. Le system ne sait trancher lequel des deux methodes appeler. Veuillez changer l'annotation de l'une de ces methodes.</h3>");
-            out.println("<p style=\"font-style:italic\">" + methodUrlConflitException.getMessage() + "</p>");
+            out.println("<p style=\"font-style:italic\">" + initMethodUrlConflitException.getMessage() + "</p>");
             out.println("</body>");
             out.println("</html>");
 
 
 
-        } else if (verbeMethodeAlreadyExistException != null){
+        } else if (initVerbeMethodeAlreadyExistException != null){
             // ERREUR POUR UN PACKAGE VIDE !!
             response.setContentType("text/html");
             response.setCharacterEncoding( "UTF-8" );
             response.setStatus(500);
-            response.addHeader("Body_message", verbeMethodeAlreadyExistException.getMessage());
+            response.addHeader("Body_message", initVerbeMethodeAlreadyExistException.getMessage());
             
             out.println("<!DOCTYPE html>");
             out.println("<html>");
@@ -181,9 +203,18 @@ public class FrontServlet extends HttpServlet{
             out.println("<body style=\"text-align:center\">");
             out.println("<h1 style=\"font-family:Courier New \">» Erreur!! Conflit entre annotation VERBE.</h1>");
             out.println("<h3>Un meme VERBE est utilisee pour annoter deux methodes differentes dans un meme controleur. Le system ne sait trancher lequel des deux methodes appeler pour un VERBE donne. Veuillez garder l'annotation VERBE pour seulement l'une de ces methodes.</h3>");
-            out.println("<p style=\"font-style:italic\">" + verbeMethodeAlreadyExistException.getMessage() + "</p>");
+            out.println("<p style=\"font-style:italic\">" + initVerbeMethodeAlreadyExistException.getMessage() + "</p>");
             out.println("</body>");
             out.println("</html>");
+
+
+        // ON GERE LE CAS OU CES EXCEPTIONS RELEVENT D'UN PROBLEME AU NIVEAU SERVEUR
+        } else if (initVerbeAnnotationAlreadyExistException != null || initMethodeAnnotationIncoherenteException != null) {
+            response.setContentType("text/html");
+            response.setCharacterEncoding( "UTF-8" );
+            response.setStatus(500);
+            response.addHeader("Body_message", initVerbeMethodeAlreadyExistException.getMessage());
+
 
         } else {
             
@@ -216,8 +247,11 @@ public class FrontServlet extends HttpServlet{
                         Object retour;
 
                         try {
+
                             
-                            retour = execMethod(classe, result, request);
+                            VerbeMethode verbeMethode = result.getVerbeMethode(request.getMethod().getClass().getName());
+                            
+                            retour = execMethod(classe, verbeMethode, request);
 
                             Class<?> kilasy = retour.getClass();
 
@@ -331,7 +365,7 @@ public class FrontServlet extends HttpServlet{
 
                             } else {
                                 try {
-                                    throw new TypeRetourException("La methode : \"" + result.getMethode() + "\" associee a cette URI : '<u>" + uri + "</u>' retourne un type que l'application ne reconnait pas.");
+                                    throw new TypeRetourException("La methode : \"" + verbeMethode.getMethode() + "\" associee a cette URI : '<u>" + uri + "</u>' retourne un type que l'application ne reconnait pas.");
                                 } catch (TypeRetourException e) {
                                     e.printStackTrace();
                                     log("Faites attention parce qu'une exception est levee ici : " + e.getMessage());
@@ -476,7 +510,7 @@ public class FrontServlet extends HttpServlet{
         // out.println(info_servlet);
     }
 
-    private void scanner(ServletConfig config) throws PackageIntrouvableException, PackageVideException, MethodeUrlConflitException, VerbeMethodeAlreadyExistException {
+    private void scanner(ServletConfig config) throws ClassNotFoundException, VerbeAnnotationAlreadyExistException, MethodeAnnotationIncoherenteException, PackageIntrouvableException, PackageVideException, MethodeUrlConflitException, VerbeMethodeAlreadyExistException {
         String controllerPackage = config.getInitParameter("Package_of_controllers");
         String nom_servlet = config.getServletName();
         String text = "Scanning package: " + controllerPackage + " Nom du Servlet : " + nom_servlet;
@@ -509,7 +543,7 @@ public class FrontServlet extends HttpServlet{
 
 
     // SCANNE LE REPERTOIRE DONNE ET INSERE DANS LA LISTE DES CONTROLEURS TOUTES LES CLASSES ANNOTEES AVEC @ControllerAnous
-    private void scanDirectory(File directory, String packageName) throws PackageVideException, MethodeUrlConflitException, VerbeMethodeAlreadyExistException {
+    private void scanDirectory(File directory, String packageName) throws ClassNotFoundException, VerbeAnnotationAlreadyExistException, MethodeAnnotationIncoherenteException, PackageVideException, MethodeUrlConflitException, VerbeMethodeAlreadyExistException {
         //String nom_fichier = "";
 
         // DANS LE CAS OU LE DOSSIER DE CONTROLEUR N'EST PAS VIDE
@@ -678,15 +712,15 @@ public class FrontServlet extends HttpServlet{
                         }
                     } catch (MethodeAnnotationIncoherenteException e) {
                         e.printStackTrace();
+                        throw e;
                     } catch (VerbeAnnotationAlreadyExistException e) {
                         e.printStackTrace();
+                        throw e;
                     } catch (ClassNotFoundException e) {
                         e.printStackTrace();
-                    } catch (MethodeUrlConflitException e) {
-                        // e.printStackTrace();
                         throw e;
-                    } catch (VerbeMethodeAlreadyExistException e) {
-                        // e.printStackTrace();
+                    } catch (MethodeUrlConflitException e) {
+                        e.printStackTrace();
                         throw e;
                     }
                 }
@@ -700,7 +734,7 @@ public class FrontServlet extends HttpServlet{
 
 
 
-    private Object execMethod(Class<?> classe, Mapping mapping, HttpServletRequest request) throws NoAnnotationParamException, NoArgumentFoundException, InstantiationException, IllegalAccessException, InvocationTargetException, NoSuchMethodException, ClassNotFoundException, NullRequestParamException{
+    private Object execMethod(Class<?> classe, VerbeMethode verbeMethode, HttpServletRequest request) throws NoAnnotationParamException, NoArgumentFoundException, InstantiationException, IllegalAccessException, InvocationTargetException, NoSuchMethodException, ClassNotFoundException, NullRequestParamException{
     
         Object a_retourner = new Object();
 
@@ -718,7 +752,7 @@ public class FrontServlet extends HttpServlet{
 
             Method m = null;
             for (Method methodi : methodes) {
-                if (methodi.getName().equals(mapping.getMethode())) {
+                if (methodi.getName().equals(verbeMethode.getMethode())) {
                     paramExist = methodi.getParameterCount() > 0;
                     m = methodi;
 
@@ -898,7 +932,7 @@ public class FrontServlet extends HttpServlet{
                     parameterType[i] = params[i].getClass();
                 }
 
-                Method methodPourObjet = classe.getDeclaredMethod(mapping.getMethode(), parameterType);
+                Method methodPourObjet = classe.getDeclaredMethod(verbeMethode.getMethode(), parameterType);
 
 
                 a_retourner = methodPourObjet.invoke(instanceClass, params);
