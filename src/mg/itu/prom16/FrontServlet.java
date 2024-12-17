@@ -6,7 +6,8 @@ import java.lang.reflect.MalformedParametersException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
 import java.lang.String;
-
+import java.lang.annotation.Annotation;
+import java.io.Console;
 import java.io.File;
 import java.io.FileNotFoundException;
 
@@ -18,9 +19,11 @@ import java.util.Map.Entry;
 import java.util.Set;
 
 import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 
 import java.util.HashMap;
-
+import java.util.HashSet;
+import java.util.Iterator;
 import java.io.IOException;
 
 import jakarta.servlet.annotation.WebServlet;
@@ -31,8 +34,6 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.ServletException;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
 
 import Exceptions.*;
 
@@ -51,7 +52,15 @@ public class FrontServlet extends HttpServlet{
 
     private PackageVideException initPackageVideException;
 
-    private MethodeUrlConflitException methodUrlConflitException;
+    private MethodeUrlConflitException initMethodUrlConflitException;
+
+    private VerbeMethodeAlreadyExistException initVerbeMethodeAlreadyExistException;
+
+    private ClassNotFoundException initClassNotFoundException;
+
+    private VerbeAnnotationAlreadyExistException initVerbeAnnotationAlreadyExistException;
+
+    private MethodeAnnotationIncoherenteException initMethodeAnnotationIncoherenteException;
 
 
 
@@ -62,21 +71,40 @@ public class FrontServlet extends HttpServlet{
         try {
             ServletConfig config = getServletConfig();
             scanner(config);
+            
         } catch (PackageIntrouvableException e) {
             this.initPackageIntrouvableException = e;
             log("Exception during servlet initialization", e);
+
         } catch (PackageVideException e) {
             this.initPackageVideException = e;
             log("Exception during servlet initialization", e);
+
         } catch (MethodeUrlConflitException e) {
-            this.methodUrlConflitException = e;
+            this.initMethodUrlConflitException = e;
+            log("Exception during servlet initialization", e);
+
+        } catch (VerbeAnnotationAlreadyExistException e) {
+            this.initVerbeAnnotationAlreadyExistException = e;
+            log("Exception during servlet initialization", e);
+
+        } catch (MethodeAnnotationIncoherenteException e) {
+            this.initMethodeAnnotationIncoherenteException = e;
+            log("Exception during servlet initialization", e);
+
+        } catch (VerbeMethodeAlreadyExistException e) {
+            this.initVerbeMethodeAlreadyExistException = e;
+            log("Exception during servlet initialization", e);
+
+        } catch (ClassNotFoundException e) {
+            this.initClassNotFoundException = e;
             log("Exception during servlet initialization", e);
         }
         
     }
 
     @Override
-    public void doGet(HttpServletRequest request,HttpServletResponse response) throws ServletException, IOException{
+    public void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException{
         try {
             processRequest(request, response);
         } catch (Exception e) {
@@ -86,7 +114,7 @@ public class FrontServlet extends HttpServlet{
     }
 
     @Override
-    public void doPost(HttpServletRequest request,HttpServletResponse response) throws ServletException, IOException{
+    public void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException{
         try {
             processRequest(request, response);
         } catch (ClassNotFoundException | InvocationTargetException | InstantiationException | IllegalAccessException
@@ -96,7 +124,7 @@ public class FrontServlet extends HttpServlet{
         }
     }
 
-    public void processRequest(HttpServletRequest request,HttpServletResponse response) throws ServletException, IOException, ClassNotFoundException, InvocationTargetException, InstantiationException, IllegalAccessException, SecurityException, NoSuchMethodException{
+    public void processRequest(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException, ClassNotFoundException, InvocationTargetException, InstantiationException, IllegalAccessException, SecurityException, NoSuchMethodException{
         
         PrintWriter out = response.getWriter();
         boolean methode_trouvee = false;
@@ -139,7 +167,7 @@ public class FrontServlet extends HttpServlet{
             out.println("</html>");
 
         
-        } else if (methodUrlConflitException != null){
+        } else if (initMethodUrlConflitException != null){
             // ERREUR POUR UN PACKAGE VIDE !!
             response.setContentType("text/html");
             response.setCharacterEncoding( "UTF-8" );
@@ -153,9 +181,40 @@ public class FrontServlet extends HttpServlet{
             out.println("<body style=\"text-align:center\">");
             out.println("<h1 style=\"font-family:Courier New \">» Erreur!! Conflit entre annotation.</h1>");
             out.println("<h3>Une meme URL est utilisee pour annoter deux methodes differentes. Le system ne sait trancher lequel des deux methodes appeler. Veuillez changer l'annotation de l'une de ces methodes.</h3>");
-            out.println("<p style=\"font-style:italic\">" + methodUrlConflitException.getMessage() + "</p>");
+            out.println("<p style=\"font-style:italic\">" + initMethodUrlConflitException.getMessage() + "</p>");
             out.println("</body>");
             out.println("</html>");
+
+
+
+        } else if (initVerbeMethodeAlreadyExistException != null){
+            // ERREUR POUR UN PACKAGE VIDE !!
+            response.setContentType("text/html");
+            response.setCharacterEncoding( "UTF-8" );
+            response.setStatus(500);
+            response.addHeader("Body_message", initVerbeMethodeAlreadyExistException.getMessage());
+            
+            out.println("<!DOCTYPE html>");
+            out.println("<html>");
+            out.println("<head>");
+            out.println("<meta charset=\"utf-8\" />");
+            out.println("<title>Erreur !</title>");
+            out.println("</head>");
+            out.println("<body style=\"text-align:center\">");
+            out.println("<h1 style=\"font-family:Courier New \">» Erreur!! Conflit entre annotation VERBE.</h1>");
+            out.println("<h3>Un meme VERBE est utilisee pour annoter deux methodes differentes dans un meme controleur. Le system ne sait trancher lequel des deux methodes appeler pour un VERBE donne. Veuillez garder l'annotation VERBE pour seulement l'une de ces methodes.</h3>");
+            out.println("<p style=\"font-style:italic\">" + initVerbeMethodeAlreadyExistException.getMessage() + "</p>");
+            out.println("</body>");
+            out.println("</html>");
+
+
+        // ON GERE LE CAS OU CES EXCEPTIONS RELEVENT D'UN PROBLEME AU NIVEAU SERVEUR
+        } else if (initVerbeAnnotationAlreadyExistException != null || initMethodeAnnotationIncoherenteException != null) {
+            response.setContentType("text/html");
+            response.setCharacterEncoding( "UTF-8" );
+            response.setStatus(500);
+            response.addHeader("Body_message", initVerbeMethodeAlreadyExistException.getMessage());
+
 
         } else {
             
@@ -188,8 +247,11 @@ public class FrontServlet extends HttpServlet{
                         Object retour;
 
                         try {
+
                             
-                            retour = execMethod(classe, result, request);
+                            VerbeMethode verbeMethode = result.getVerbeMethode(request.getMethod().getClass().getName());
+                            
+                            retour = execMethod(classe, verbeMethode, request);
 
                             Class<?> kilasy = retour.getClass();
 
@@ -212,7 +274,7 @@ public class FrontServlet extends HttpServlet{
 
 
 
-                                    // SPRINT9 - ON TESTE SI LA CLASSE CONCERNNEE ICI EST ANNOTEE PAR @RespApi
+                                    // SPRINT9 - ON TESTE SI LA CLASSE CONCERNNEE ICI EST ANNOTEE PAR @RestApi
                                     // SI OUI ALORS NOUS ALLONS TRANSFORMER EN json LA VALEUR DE data
                                     if (classe.isAnnotationPresent(RestApi.class)) {
                                         // ON TRANSFORME EN json AVEC JsonBuilder POUR L'ENVOI SOUS FORMAT (text/json)
@@ -303,7 +365,7 @@ public class FrontServlet extends HttpServlet{
 
                             } else {
                                 try {
-                                    throw new TypeRetourException("La methode : \"" + result.getMethode() + "\" associee a cette URI : '<u>" + uri + "</u>' retourne un type que l'application ne reconnait pas.");
+                                    throw new TypeRetourException("La methode : \"" + verbeMethode.getMethode() + "\" associee a cette URI : '<u>" + uri + "</u>' retourne un type que l'application ne reconnait pas.");
                                 } catch (TypeRetourException e) {
                                     e.printStackTrace();
                                     log("Faites attention parce qu'une exception est levee ici : " + e.getMessage());
@@ -448,7 +510,7 @@ public class FrontServlet extends HttpServlet{
         // out.println(info_servlet);
     }
 
-    private void scanner(ServletConfig config) throws PackageIntrouvableException, PackageVideException, MethodeUrlConflitException {
+    private void scanner(ServletConfig config) throws ClassNotFoundException, VerbeAnnotationAlreadyExistException, MethodeAnnotationIncoherenteException, PackageIntrouvableException, PackageVideException, MethodeUrlConflitException, VerbeMethodeAlreadyExistException {
         String controllerPackage = config.getInitParameter("Package_of_controllers");
         String nom_servlet = config.getServletName();
         String text = "Scanning package: " + controllerPackage + " Nom du Servlet : " + nom_servlet;
@@ -481,7 +543,7 @@ public class FrontServlet extends HttpServlet{
 
 
     // SCANNE LE REPERTOIRE DONNE ET INSERE DANS LA LISTE DES CONTROLEURS TOUTES LES CLASSES ANNOTEES AVEC @ControllerAnous
-    private void scanDirectory(File directory, String packageName) throws PackageVideException, MethodeUrlConflitException {
+    private void scanDirectory(File directory, String packageName) throws ClassNotFoundException, VerbeAnnotationAlreadyExistException, MethodeAnnotationIncoherenteException, PackageVideException, MethodeUrlConflitException, VerbeMethodeAlreadyExistException {
         //String nom_fichier = "";
 
         // DANS LE CAS OU LE DOSSIER DE CONTROLEUR N'EST PAS VIDE
@@ -499,33 +561,166 @@ public class FrontServlet extends HttpServlet{
                             // listeControllers.add(clazz.getName());
                             Method[] methodes = clazz.getMethods();
                             for (Method m : methodes){
-                                if (m.isAnnotationPresent(annotations.Get.class)){
-                                    Get methodAnnotation = m.getAnnotation(annotations.Get.class);
-                                    String attribut = methodAnnotation.url();
-                                    if (methodeEtController.containsKey(methodAnnotation.url())) {
+                                if (m.isAnnotationPresent(annotations.Url.class) && ((m.isAnnotationPresent(annotations.Get.class)) || m.isAnnotationPresent(annotations.Post.class))){
+                                    Url methodAnnotationUrl = m.getAnnotation(annotations.Url.class);
+                                    String attribut_URL = methodAnnotationUrl.value();
+                                    if (!methodeEtController.isEmpty() && methodeEtController.containsKey(attribut_URL)) {
                                         // UNE URL EST UTILISEE POUR ANNOTER DEUX FONCTIONS DIFFERENTES
-                                        throw new MethodeUrlConflitException ("Attention ! l'URI : \"/" + attribut + "\" est utilisee comme '@Get(url = \"/" + attribut + "') pour annoter deux methodes differentes.");
+                                        throw new MethodeUrlConflitException ("Attention ! l'URI : \"/" + attribut_URL + "\" est utilisee comme '@Url(value = \"/" + attribut_URL + "') pour annoter deux methodes differentes.");
                                     }
                                     // Mapping entry = new Mapping(clazz.getName(), m.getName());
-                                    Mapping entry = new Mapping(clazz.getName(), m.getName());
-                                    methodeEtController.put(attribut, entry);
-                                } else if (m.isAnnotationPresent(annotations.Post.class)){
-                                    Post methodAnnotation = m.getAnnotation(annotations.Post.class);
-                                    String attribut = methodAnnotation.url();
-                                    if (methodeEtController.containsKey(methodAnnotation.url())) {
-                                        // UNE URL EST UTILISEE POUR ANNOTER DEUX FONCTIONS DIFFERENTES
-                                        throw new MethodeUrlConflitException ("Attention ! l'URI : \"/" + attribut + "\" est utilisee comme '@Post(url = \"/" + attribut + "') pour annoter deux methodes differentes.");
+                                    
+                                    //CONSTRUCTION DE L'OBJET Mapping
+                                    String nouveauControleur = clazz.getName();
+                                    VerbeMethode verbeMethode = new VerbeMethode();
+                                    
+                                    Mapping mapping = new Mapping();
+                                    // Set<VerbeMethode> collectionVbMtd_a_inserer = new HashSet<>();
+                                      
+                                    
+                                    /* SCHEMAS REPRESENTATIF
+                                        HashMap methodeEtController
+	                                                    ├── String url
+	                                                    └── Mapping m
+		                                                            ├── String classe;
+		                                                            └── Set<VerbeMethode> verbMethod;
+	                                                                                        ├── String verb;
+	                                                                                        └── String method;
+
+                                     */
+
+
+
+
+
+
+
+                                    if (methodeEtController.isEmpty()) { // AU DEMARRAGE, SI methodeEtController est VIDE
+
+                                        mapping.setClasse(nouveauControleur);
+
+                                        methodeEtController.put(attribut_URL, mapping);
+
+                                        // Annotation[] annotations = m.getAnnotations();
+
+                                        // VerbeMethode verbeMethodeOnStart;
+                                        // // boucler sur les annotations
+                                        // for (int i = 0; i < annotations.length; i++) {
+                                        //     if (annotations[i].getClass().getName() == annotations.Get.class.getName()) {
+                                        //         verbeMethodeOnStart = new VerbeMethode();
+                                        //         verbeMethodeOnStart.setMethode(m.getName());
+                                        //         verbeMethodeOnStart.setVerbe(annotations.Get.class.getName());
+
+                                        //         if (!methodeEtController.get(attribut_URL).getCollectionVerbeMethode().contains(verbeMethodeOnStart)) {
+                                        //             methodeEtController.
+                                        //         }
+                                        //     } else if (annotations[i].getClass().getName() == annotations.Post.class.getName()) {
+                                                
+                                        //     }
+                                        // }
                                     }
-                                    // Mapping entry = new Mapping(clazz.getName(), m.getName());
-                                    Mapping entry = new Mapping(clazz.getName(), m.getName());
-                                    methodeEtController.put(attribut, entry);
+
+
+
+                                    
+                                    
+                                    if (!methodeEtController.isEmpty()) {
+                                        if (!methodeEtController.containsKey(attribut_URL)) { // si l'Url n'est pas encore enregistree dans le methodeEtController
+                                            
+                                            mapping.setClasse(nouveauControleur);
+                                            
+                                            verbeMethode.setMethode(m.getName());
+
+                                            if (m.isAnnotationPresent(annotations.Get.class) && !m.isAnnotationPresent(annotations.Post.class)) { // ---- ANNOTEE Get MAIS PAS Post
+                                                
+                                                verbeMethode.setVerbe(annotations.Get.class.getName());
+                                                mapping.getCollectionVerbeMethode().add(verbeMethode);
+
+                                            } else if (!m.isAnnotationPresent(annotations.Get.class) && m.isAnnotationPresent(annotations.Post.class)) { // ---- ANNOTEE Post MAIS PAS Get
+
+                                                verbeMethode.setVerbe(annotations.Post.class.getName());
+                                                mapping.getCollectionVerbeMethode().add(verbeMethode);
+                                                
+                                            } else { // FORCEMENT LES DEUX MAIS PAS ni... ni... PUISQUE LE IF ENVELOPPANT TOUT CECI EST CLAIRE
+
+                                                verbeMethode.setVerbe(annotations.Get.class.getName());
+                                                VerbeMethode verbeMethode2 = new VerbeMethode(annotations.Post.class.getName());
+                                                mapping.getCollectionVerbeMethode().add(verbeMethode);
+                                                mapping.getCollectionVerbeMethode().add(verbeMethode2);
+                                            }
+                                            
+                                            // ENFIN ON CREEE UNE ENTREE DANS LE HashMap methodeEtController
+                                            methodeEtController.put(attribut_URL, mapping);
+
+                                        } else { // CAS OU L'URL EST DEJA DANS methodeEtController    
+                                            
+                                            verbeMethode.setMethode(m.getName());
+
+                                            if (m.isAnnotationPresent(annotations.Get.class) && !m.isAnnotationPresent(annotations.Post.class)) { // ---- ANNOTEE Get MAIS PAS Post
+                                                
+                                                verbeMethode.setVerbe(annotations.Get.class.getName());
+                                                
+                                                if(!methodeEtController.get(attribut_URL).getCollectionVerbeMethode().isEmpty() && methodeEtController.get(attribut_URL).getCollectionVerbeMethode().contains(verbeMethode)) {
+                                                    throw new VerbeAnnotationAlreadyExistException("La methode est deja annotee : " + verbeMethode.getVerbe()); //Nous gererons cette exception levee a un niveau plus au dessus de l'appel pour juste changer l'entete de la HttpResponse res en 500 au lieu de 200
+                                                } else {
+                                                    methodeEtController.get(attribut_URL).getCollectionVerbeMethode().add(verbeMethode);
+                                                }
+
+                                            } else if (!m.isAnnotationPresent(annotations.Get.class) && m.isAnnotationPresent(annotations.Post.class)) { // ---- ANNOTEE Post MAIS PAS Get
+
+                                                verbeMethode.setVerbe(annotations.Post.class.getName());
+                                                
+                                                if(!methodeEtController.get(attribut_URL).getCollectionVerbeMethode().isEmpty() && methodeEtController.get(attribut_URL).getCollectionVerbeMethode().contains(verbeMethode)) {
+                                                    throw new VerbeAnnotationAlreadyExistException("La methode est deja annotee : " + verbeMethode.getVerbe()); //Nous gererons cette exception levee a un niveau plus au dessus de l'appel pour juste changer l'entete de la HttpResponse res en 500 au lieu de 200
+                                                } else {
+                                                    methodeEtController.get(attribut_URL).getCollectionVerbeMethode().add(verbeMethode);
+                                                }
+                                                
+                                            } else { // FORCEMENT LES DEUX MAIS PAS ni... ni... PUISQUE LE DERNIER IF ENVELOPPANT TOUT CECI EST TRES CLAIRE
+
+                                                verbeMethode.setVerbe(annotations.Get.class.getName());
+                                                VerbeMethode verbeMethode2 = new VerbeMethode(annotations.Post.class.getName());
+                                                
+                                                if(!methodeEtController.get(attribut_URL).getCollectionVerbeMethode().isEmpty() && (methodeEtController.get(attribut_URL).getCollectionVerbeMethode().contains(verbeMethode) || methodeEtController.get(attribut_URL).getCollectionVerbeMethode().contains(verbeMethode2))) {
+                                                    if (methodeEtController.get(attribut_URL).getCollectionVerbeMethode().contains(verbeMethode) && !methodeEtController.get(attribut_URL).getCollectionVerbeMethode().contains(verbeMethode2)) {
+                                                        throw new VerbeAnnotationAlreadyExistException("La methode est deja annotee : " + verbeMethode.getVerbe()); //Nous gererons cette exception levee a un niveau plus au dessus de l'appel pour juste changer l'entete de la HttpResponse res en 500 au lieu de 200
+                                                    } else if (!methodeEtController.get(attribut_URL).getCollectionVerbeMethode().contains(verbeMethode) && methodeEtController.get(attribut_URL).getCollectionVerbeMethode().contains(verbeMethode2)) {
+                                                        throw new VerbeAnnotationAlreadyExistException("La methode est deja annotee : " + verbeMethode2.getVerbe()); //Nous gererons cette exception levee a un niveau plus au dessus de l'appel pour juste changer l'entete de la HttpResponse res en 500 au lieu de 200
+                                                    } else {
+                                                        throw new VerbeAnnotationAlreadyExistException("La methode est deja annotee a la fois par : -" + verbeMethode.getVerbe() + "-  et  - " + verbeMethode2.getVerbe()); //Nous gererons cette exception levee a un niveau plus au dessus de l'appel pour juste changer l'entete de la HttpResponse res en 500 au lieu de 200
+                                                    }
+                                                } else {
+                                                    
+                                                    methodeEtController.get(attribut_URL).getCollectionVerbeMethode().add(verbeMethode);
+                                                    
+                                                    // ON FINIT LA CREATION DE verbeMethode2
+                                                    verbeMethode2.setMethode(m.getName());
+                                                    methodeEtController.get(attribut_URL).getCollectionVerbeMethode().add(verbeMethode2);
+                                                }
+                                            }
+                                            
+
+                                        }
+                                    } 
+
+
+                                } else if ((m.isAnnotationPresent(annotations.Url.class) && ((m.isAnnotationPresent(annotations.Get.class)) || m.isAnnotationPresent(annotations.Post.class))) || (m.isAnnotationPresent(annotations.Url.class) && (!m.isAnnotationPresent(annotations.Get.class) && !m.isAnnotationPresent(annotations.Post.class)))) {
+                                    log("Sady tsy annote GET no tsy annotee POST");
+                                    throw new MethodeAnnotationIncoherenteException("Les annotations de cette methode sont incoherentes : soit la methode n'est pas annotee par @Url mais pourtant est annotee @Get ou @Post, soit elle n'est ni annotee @Get ni annotee @Post mais pourtant est annotee par @Url"); //Nous gererons cette exception levee a un niveau plus au dessus de l'appel pour juste changer l'entete de la HttpResponse res en 500 au lieu de 200
                                 }
                             }
                         }
+                    } catch (MethodeAnnotationIncoherenteException e) {
+                        e.printStackTrace();
+                        throw e;
+                    } catch (VerbeAnnotationAlreadyExistException e) {
+                        e.printStackTrace();
+                        throw e;
                     } catch (ClassNotFoundException e) {
                         e.printStackTrace();
+                        throw e;
                     } catch (MethodeUrlConflitException e) {
-                        // e.printStackTrace();
+                        e.printStackTrace();
                         throw e;
                     }
                 }
@@ -539,7 +734,7 @@ public class FrontServlet extends HttpServlet{
 
 
 
-    private Object execMethod(Class<?> classe, Mapping mapping, HttpServletRequest request) throws NoAnnotationParamException, NoArgumentFoundException, InstantiationException, IllegalAccessException, InvocationTargetException, NoSuchMethodException, ClassNotFoundException, NullRequestParamException{
+    private Object execMethod(Class<?> classe, VerbeMethode verbeMethode, HttpServletRequest request) throws NoAnnotationParamException, NoArgumentFoundException, InstantiationException, IllegalAccessException, InvocationTargetException, NoSuchMethodException, ClassNotFoundException, NullRequestParamException{
     
         Object a_retourner = new Object();
 
@@ -557,7 +752,7 @@ public class FrontServlet extends HttpServlet{
 
             Method m = null;
             for (Method methodi : methodes) {
-                if (methodi.getName().equals(mapping.getMethode())) {
+                if (methodi.getName().equals(verbeMethode.getMethode())) {
                     paramExist = methodi.getParameterCount() > 0;
                     m = methodi;
 
@@ -737,7 +932,7 @@ public class FrontServlet extends HttpServlet{
                     parameterType[i] = params[i].getClass();
                 }
 
-                Method methodPourObjet = classe.getDeclaredMethod(mapping.getMethode(), parameterType);
+                Method methodPourObjet = classe.getDeclaredMethod(verbeMethode.getMethode(), parameterType);
 
 
                 a_retourner = methodPourObjet.invoke(instanceClass, params);
